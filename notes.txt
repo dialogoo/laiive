@@ -13,4 +13,11 @@ the database is autofilled with certified accounts and links to their places (wh
 - features > recomendation sistem(geo, person, group, place), integration in whatsapp, telegram, discord, links to official place, installation and subscription
 
 
- 
+- 1st draft: 
+    - data scraping bergamo
+    - chatbot website bergamo
+    - tracking users, queries
+    
+- 2nd draft:
+    - upload credentials
+    - subscriptions(default??)
