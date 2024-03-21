@@ -1,0 +1,16 @@
+/laiive/Aleix is a virtual friend that gives you the best options to do today (life music events) and explore other ones
+
+in the background there is an ai agent that connects with a database
+
+the database is autofilled with certified accounts and links to their places (whith a numbernote)
+
+- key steps> start> conquist> all
+
+- key services> a friend that knows all the events of the world
+
+- interface > simple chat to add to all the chat platforms/groups
+
+- features > recomendation sistem(geo, person, group, place), integration in whatsapp, telegram, discord, links to official place, installation and subscription
+
+
+ 
