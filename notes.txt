@@ -19,5 +19,7 @@ the database is autofilled with certified accounts and links to their places (wh
     - tracking users, queries
     
 - 2nd draft:
-    - upload credentials
+    - upload with certified user
     - subscriptions(default??)
+
+dudas: ceo in residence? search for finance
