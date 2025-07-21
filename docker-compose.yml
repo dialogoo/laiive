@@ -2,9 +2,13 @@ services:
   frontend:
     container_name: laiive-rag-chat-frontend
     build: ./services/frontend
+    depends_on:
+      - db
     command: ["uv","run","streamlit","run","main.py","--server.address","0.0.0.0","--server.port","3000"]
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
     # watch to sync the changes in the frontend code to the container
@@ -19,10 +23,14 @@ services:
 
   backend:
     container_name: laiive-rag-chat-backend
-    build: ./services/backend
+    build: ./services/RAG-chat
+    depends_on:
+      - db
     command: ["uv","run","python","main.py","--server.port=8000"]
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
     # watch to sync the changes in the backend code to the container
@@ -36,10 +44,10 @@ services:
 
   db:
     image: postgres:16-alpine
-    env_file:
-      - .env
     container_name: laiive-postgres-db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -49,7 +57,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       retries: 5
 

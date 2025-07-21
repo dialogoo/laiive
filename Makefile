@@ -10,6 +10,3 @@ down:
 
 logs:
 	docker-compose logs -f
-
-precommit:
-  pre-commit run --all-files
