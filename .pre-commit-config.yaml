@@ -1,15 +1,72 @@
+# See https://pre-commit.com
 repos:
+  #######################################################################
+  # 1. House‑keeping & “always on” fixers
+  #######################################################################
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0  # the release, git tag, or commit you want to use
+    rev: v4.5.0          # pin to published tag
     hooks:
       - id: check-toml
       - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
+  #######################################################################
+  # 2. Ruff: lint *then* format, one pass, auto‑fix on commit
+  #######################################################################
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.5
     hooks:
+      # Linter must run *before* the formatter when --fix is enabled
+      # see Ruff docs on ordering
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+        files: "^(frontend|backend)/.*\\.py$"
       - id: ruff-format
+        files: "^(frontend|backend)/.*\\.py$"
+
+  #######################################################################
+  # 3. Static typing
+  #######################################################################
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        additional_dependencies: ["types-requests"]   # add stubs your app needs
+        files: "^(frontend|backend)/.*\\.py$"
+
+  #######################################################################
+  # 4. Security & supply‑chain
+  #######################################################################
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.3           # latest stable
+    hooks:
+      - id: bandit
+        args: [-r, frontend, -r, backend, -ll]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        stages: [commit, push]
+
+  #######################################################################
+  # 5. SQL linting for Postgres migrations & seed scripts
+  #######################################################################
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 2.3.5
+    hooks:
+      - id: sqlfluff-lint
+        args: ["--dialect", "postgres"]
+        files: "^migrations/.*\\.sql$"
+
+  #######################################################################
+  # 6. Conventional Commit enforcement
+  #######################################################################
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]  # validates on commit, no CI surprises
