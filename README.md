@@ -1,3 +1,4 @@
+
 # 🫦 Laiive
 
 #### what is 🫦Laiive
@@ -26,3 +27,4 @@ Is the backbone of laiive, high accuracy on retrievals from the knwoledge databa
 1st phase: with llama-index just session id, no user id. just serving info, not extracting info from conversations
 2nd phase. + user id 
 
+<img width="512" height="512" alt="laiive 4" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5" />
