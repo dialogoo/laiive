@@ -1,0 +1,14 @@
+version: "3.9"           # works with Compose v2+
+
+services:
+  frontend:
+    build: ./frontend
+    command: ["uv", "run", "python", "main.py", "--server.port", "3000"]
+    volumes: ["./frontend:/app"]
+    ports:  ["3000:3000"]
+
+  backend:
+    build: ./RAG-chat
+    command: ["uv", "run", "python", "main.py"]
+    volumes: ["./RAG-chat:/app"]
+    ports:  ["8000:8000"]
