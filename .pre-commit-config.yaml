@@ -44,7 +44,6 @@ repos:
     rev: 1.7.3           # latest stable
     hooks:
       - id: bandit
-        args: [-r, frontend, -r, backend, -ll]
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0

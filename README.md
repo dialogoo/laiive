@@ -17,7 +17,7 @@ Laiive is the best way to know what to do, Laiive connect live music places with
 #### why is 🫦Laiive  profitable?
 
 
-## Frontend 
+## Frontend
 Frontend is the public view of laiive
 1st phase:  MVP minimal viable product, streamlit easy app or similar (python base)
 2nd phase: jump into React frontend for scale
@@ -25,6 +25,6 @@ Frontend is the public view of laiive
 ## RAG-chat
 Is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
 1st phase: with llama-index just session id, no user id. just serving info, not extracting info from conversations
-2nd phase. + user id 
+2nd phase. + user id
 
 <img width="512" height="512" alt="laiive 4" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5" />

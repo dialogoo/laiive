@@ -1,9 +1,10 @@
-name: laiiv-rag-chat
-
 services:
   frontend:
+    container_name: laiive-rag-chat-frontend
     build: ./frontend
-    ports:  ["3000:3000"]
+    command: ["uv","run","streamlit","run","main.py","--server.address","0.0.0.0","--server.port","3000"]
+    ports:
+      - "3000:3000"
     develop:
       watch:
         - action: sync
@@ -12,10 +13,12 @@ services:
           ignore:
             - .venv/
 
-
   backend:
+    container_name: laiive-rag-chat-backend
     build: ./RAG-chat
-    ports:  ["8000:8000"]
+    command: ["uv","run","python","main.py","--server.port=8000"]
+    ports:
+      - "8000:8000"
     develop:
       watch:
         - action: sync

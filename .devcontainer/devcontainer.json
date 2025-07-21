@@ -1,13 +1,13 @@
 {
     "dockerComposeFile": "../docker-compose.yml",
 
-    "service": "frontend",
+    "service": "backend",
 
-    "workspaceFolder": "/workspace",
+    "workspaceFolder": "/app",
 
     "forwardPorts": [3000, 8000],
 
-    "postStartCommand": "pre-commit install && make install",
+    "postStartCommand": "pre-commit install",
 
     "customizations": {
       "vscode": {

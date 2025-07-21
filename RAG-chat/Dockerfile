@@ -26,4 +26,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["uv", "run", "main.py"]
+CMD ["uv", "run", "main.py", "--server.port", "8000"]
