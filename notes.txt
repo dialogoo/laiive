@@ -6,7 +6,7 @@ the database is autofilled with certified accounts and links to their places (wh
 
 - key steps> start> conquist> all
 
-- key services> a friend that knows all the events of the world
+- key services> a system that conects users with all the cultural events of the world
 
 - interface > simple chat to add to all the chat platforms/groups
 
