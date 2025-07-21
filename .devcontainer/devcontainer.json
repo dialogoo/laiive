@@ -7,7 +7,7 @@
 
     "forwardPorts": [3000, 8000],
 
-    "postStartCommand": "pre-commit install",
+    "postStartCommand": "pre-commit install && make install",
 
     "customizations": {
       "vscode": {

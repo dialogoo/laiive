@@ -1,4 +1,6 @@
-version: "3.9"           # works with Compose v2+
+version: "3.9"
+
+name: laiiv-rag-chat
 
 services:
   frontend:
