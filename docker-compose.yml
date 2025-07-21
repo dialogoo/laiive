@@ -1,16 +1,25 @@
-version: "3.9"
-
 name: laiiv-rag-chat
 
 services:
   frontend:
     build: ./frontend
-    command: ["uv", "run", "python", "main.py", "--server.port", "3000"]
-    volumes: ["./frontend:/app"]
     ports:  ["3000:3000"]
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
+
 
   backend:
     build: ./RAG-chat
-    command: ["uv", "run", "python", "main.py"]
-    volumes: ["./RAG-chat:/app"]
     ports:  ["8000:8000"]
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
