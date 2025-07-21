@@ -1,4 +1,3 @@
-<img width="1024" height="1024" alt="laiive 4" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5" />
 
 # 🫦 Laiive
 
@@ -9,3 +8,4 @@ Laiive is the best way to know what to do, Laiive connect live music places with
 2nd Assumption: People will check in the chat what to do, and system will answer friendly.
 3rd Assumption; with all the events there people will recommend it to friends and make it viral (growth model)
 
+<img width="512" height="512" alt="laiive 4" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5" />
