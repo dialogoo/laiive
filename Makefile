@@ -2,11 +2,14 @@
 build:
 	docker-compose build
 
-run:
+up:
 	docker-compose up --build
 
-stop:
+down:
 	docker-compose down
 
 logs:
 	docker-compose logs -f
+
+precommit:
+  pre-commit run --all-files
