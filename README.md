@@ -7,6 +7,3 @@ Laiive is the best way to know what to do, Laiive connect live music places with
 2nd Assumption: People will check in the chat what to do, and system will answer friendly.
 3rd Assumption; with all the events there people will recommend it to friends and make it viral (growth model)
 
-APP TUTORIALS
-https://cloud.google.com/blog/products/ai-machine-learning/rag-with-databases-on-google-cloud
-
