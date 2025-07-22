@@ -1,9 +1,11 @@
-# 🫦 Laiive
+# Laiive
+
+<img width="90" height="90" alt="laiive1" src="https://github.com/user-attachments/assets/357725b4-4da2-4463-b9a5-896a29fc4b79" />
 
 #### what is 🫦Laiive
 Laiive is the best way to know what to do, Laiive connect live music places with people. Laiive is a link between life music and public. Just ask, Laiive will answer.
 
-<img width="200" height="200" alt="laiive1" src="https://github.com/user-attachments/assets/357725b4-4da2-4463-b9a5-896a29fc4b79" />
+
 
 #### why is 🫦Laiive needed?
 
@@ -16,28 +18,40 @@ Laiive is the best way to know what to do, Laiive connect live music places with
 
 #### why is 🫦Laiive  profitable?
 
+---
 
 ## Services
-#### Frontend
-Frontend is the public view of laiive
+<img width="90" height="90" alt="laiive1" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5"  />
+
+### UI
+a ZERO CLIC UI is the public view of laiive
 1st phase:  MVP minimal viable product, streamlit easy app or similar (python base)
 2nd phase: jump into React frontend
 
-#### RAG-chat
+### RAG-chat
 With a simple UI this is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
 1st phase: with llama-index just session id, no user id. just serving info, not extracting info from conversations
 2nd phase. + user id
 
-#### Scraper
+### Event Scraper
 First feed to the db, until the pusher will the main data source and the system is ready to switch
 The transition will be based on geographic penetration.
 
-#### Pusher
-A simple way to push and confirm event data from promoters.
-A reliable database serves reliable answers.
+### Pusher-Extractor
+Easy is the keyword, the most easy way to push and confirm your event data.
+Optimized for reliability. A reliable database serves reliable answers.
 
-#### db
-A Postgres db is the heart of the system and stores all the system knowledge. As its pgvector enables semantic searches across the knowlede database.
+### Data
+laiive deals with ephimeral data, data that still doesn't exist, laiive is a dynamic process, that grows in inertia when users use it and promoters push events.
+A Postgres db is the heart of this dynamics and stores all the system knowledge. 
+
+---
+
+#### Design and Product Materials
+
+All strategic documents, diagrams, mockups, and planning content (e.g. exported from Miro, Figma, or internal notes) are **copyrighted**.
+They are provided for **reference only** and are not licensed for reuse, reverse-engineering, or commercial reproduction.
+Please contact [info@laiive.com] for inquiries.
 
 
-<img alt="laiive 4" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5" style="max-width: 100%; height: auto;" />
+
