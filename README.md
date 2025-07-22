@@ -1,9 +1,9 @@
-
 # 🫦 Laiive
 
 #### what is 🫦Laiive
 Laiive is the best way to know what to do, Laiive connect live music places with people. Laiive is a link between life music and public. Just ask, Laiive will answer.
 
+<img width="200" height="200" alt="laiive1" src="https://github.com/user-attachments/assets/357725b4-4da2-4463-b9a5-896a29fc4b79" />
 
 #### why is 🫦Laiive needed?
 
@@ -24,19 +24,20 @@ Frontend is the public view of laiive
 2nd phase: jump into React frontend
 
 #### RAG-chat
-Is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
+With a simple UI this is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
 1st phase: with llama-index just session id, no user id. just serving info, not extracting info from conversations
 2nd phase. + user id
 
 #### Scraper
-First feed to the db, until the pusher will the main data source.
-The transition will be based on geographic penetration
+First feed to the db, until the pusher will the main data source and the system is ready to switch
+The transition will be based on geographic penetration.
 
 #### Pusher
 A simple way to push and confirm event data from promoters.
+A reliable database serves reliable answers.
 
 #### db
-A Postgres db is the heart of the system and stores all the system knowledge.
+A Postgres db is the heart of the system and stores all the system knowledge. As its pgvector enables semantic searches across the knowlede database.
 
 
 <img alt="laiive 4" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5" style="max-width: 100%; height: auto;" />
