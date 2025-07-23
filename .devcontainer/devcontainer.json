@@ -1,29 +1,32 @@
 {
-    "dockerComposeFile": "../docker-compose.yml",
-
-    "service": "backend",
-
-    "workspaceFolder": "/app",
-
-    "forwardPorts": [3000, 8000],
-
-    "postStartCommand": "pre-commit install",
-
-    "customizations": {
-      "vscode": {
-        "extensions": [
-          "ms-python.python",
-          "ms-azuretools.vscode-docker",
-          "ms-python.vscode-pylance",
-          "ms-python.black-formatter"
-        ],
-        "settings": {
-          "python.linting.enabled": true,
-          "python.linting.ruffEnabled": true,
-          "editor.formatOnSave": true,
-          "python.testing.pytestEnabled": true,
-          "python.testing.unittestEnabled": false
-        }
+  "name": "laiive-monorepo",
+  "dockerComposeFile": "../docker-compose.yml",
+  "workspaceFolder": "/workspace",
+  "service": "workspace",
+  "overrideCommand": false,
+  "forwardPorts": [
+    3000,
+    8000
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "postStartCommand": "git config --global --add safe.directory '*' && pre-commit install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter"
+      ],
+      "settings": {
+        "python.linting.enabled": true,
+        "python.linting.ruffEnabled": true,
+        "editor.formatOnSave": true,
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false
       }
     }
   }
+}

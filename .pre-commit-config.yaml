@@ -17,15 +17,15 @@ repos:
   # 2. Ruff: lint *then* format, one pass, auto‑fix on commit
   #######################################################################
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.5
+    rev: v0.4.9
     hooks:
       # Linter must run *before* the formatter when --fix is enabled
       # see Ruff docs on ordering
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
-        files: "^(frontend|backend)/.*\\.py$"
+        files: "^(services/frontend|services/backend)/.*\\.py$"
       - id: ruff-format
-        files: "^(frontend|backend)/.*\\.py$"
+        files: "^(services/frontend|services/backend)/.*\\.py$"
 
   #######################################################################
   # 3. Static typing
@@ -35,7 +35,7 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: ["types-requests"]   # add stubs your app needs
-        files: "^(frontend|backend)/.*\\.py$"
+        files: "^(services/frontend|services/backend)/.*\\.py$"
 
   #######################################################################
   # 4. Security & supply‑chain

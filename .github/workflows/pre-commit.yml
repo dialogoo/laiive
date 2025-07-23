@@ -1,0 +1,34 @@
+# .github/workflows/pre-commit.yml
+name: pre-commit
+
+on:
+  push:                # protect every branch
+  pull_request:        # protect every PR
+  workflow_dispatch:   # (optional) run it manually from the UI
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest           # you can also matrix this (see tips)
+    # Don’t let several runs clash on the same branch
+    concurrency:
+      group: ${{ github.ref }}-precommit
+      cancel-in-progress: true
+
+    steps:
+      # 1. Check out the code that triggered the build
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0            # let pre-commit diff correctly
+
+      # 2. Ensure a Python runtime for pre‑commit itself (even if your project isn’t Python)
+      - uses: actions/setup-python@v5   # v5 is current as of July 2025
+        with:
+          python-version: '3.x'         # any supported version works
+
+      # 3. Run the hooks (and benefit from built‑in caching)
+      - uses: pre-commit/action@v3.0.1  # latest release • maintenance only • works great :contentReference[oaicite:0]{index=0}
+
+      # 4. (optional) Fail fast when hooks change files instead of only linting
+      #    - name: Check for unstaged changes
+      #      run: |
+      #        git diff --exit-code
