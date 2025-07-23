@@ -47,11 +47,8 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 ---
 
-#### Design and Product Materials
-
-All strategic documents, diagrams, mockups, and planning content (e.g. exported from Miro, Figma, or internal notes) are **copyrighted**.
-They are provided for **reference only** and are not licensed for reuse, reverse-engineering, or commercial reproduction.
-Please contact [info@laiive.com] for inquiries.
+Copyright Notice
+© laiive. All strategic documents, diagrams, mockups, and planning materials contained in this repository are the intellectual property of Laiive and are provided solely for reference purposes. Unauthorized reproduction, distribution, reverse engineering, or commercial use of these materials is strictly prohibited without prior written consent from Laiive. For questions regarding usage rights or licensing, please contact: info@laiive.com.
 
 
 
