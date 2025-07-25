@@ -17,6 +17,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . /app
 
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
@@ -26,4 +27,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["uv", "run", "main.py", "--server.port", "8000"]
+CMD ["uv", "run", "src/main.py", "--server.port", "8000"]
