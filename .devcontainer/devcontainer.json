@@ -1,8 +1,11 @@
 {
   "name": "laiive-monorepo",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.override.yml"
+  ],
   "workspaceFolder": "/workspace",
-  "service": "workspace",
+  "service": "global-workspace",
   "overrideCommand": false,
   "forwardPorts": [
     3000,

@@ -1,0 +1,52 @@
+# development
+services:
+  global-workspace:
+    container_name: global-workspace
+    build:
+      context: .devcontainer
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace:cached
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+      - db
+    ports:
+      - "3001:3000"
+      - "8001:8000"
+    tty: true
+    stdin_open: true
+    command: ["sleep", "infinity"]
+
+  frontend:
+    container_name: laiive-frontend
+    build: ./services/frontend
+    volumes:
+      - ./services/frontend:/app:cached
+    tty: true
+    stdin_open: true
+    command: ["sleep", "infinity"]
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
+
+  backend:
+    container_name: laiive-rag-chat-backend
+    build: ./services/RAG-chat
+    volumes:
+      - ./services/RAG-chat:/app:cached
+    tty: true
+    stdin_open: true
+    command: ["sleep", "infinity"]
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/

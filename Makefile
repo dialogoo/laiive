@@ -4,8 +4,11 @@ export
 build:
 	docker-compose build
 
-up:
+up-dev:
 	docker-compose up --build
+
+up-prod:
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml up --build
 
 down:
 	docker-compose down
@@ -21,3 +24,18 @@ db-backup:
 
 db-import:
 	docker exec -i laiive-postgres-db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} < data/backup.sql
+
+shell-backend:
+	docker exec -it laiive-rag-chat-backend sh
+
+shell-frontend:
+	docker exec -it laiive-frontend sh
+
+shell-db:
+	docker exec -it laiive-postgres-db sh
+
+shell-pusher:
+	docker exec -it laiive-pusher sh
+
+shell-workspace:
+	docker exec -it global-workspace sh

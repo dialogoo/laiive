@@ -1,62 +1,51 @@
+# base / production
 services:
-  workspace:
-    build:
-      context: .devcontainer
-      dockerfile: Dockerfile
-    volumes:
-      - .:/workspace:cached
-    depends_on:
-      - backend
-      - frontend
-      - db
-    # Optional: for development convenience
-    ports:
-      - "3001:3000"
-      - "8001:8000"
-
   frontend:
-    container_name: laiive-rag-chat-frontend
+    container_name: laiive-frontend
     build: ./services/frontend
     depends_on:
       - db
-    command: [ "uv", "run", "streamlit", "run", "main.py", "--server.address", "0.0.0.0", "--server.port", "3000" ]
+    command:
+      - uv
+      - run
+      - streamlit
+      - run
+      - main.py
+      - --server.address
+      - 0.0.0.0
+      - --server.port
+      - "3000"
     ports:
       - "3000:3000"
     env_file:
       - .env
-    # watch to sync the changes in the frontend code to the container
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /app
-          ignore:
-            - .venv/
 
   backend:
     container_name: laiive-rag-chat-backend
     build: ./services/RAG-chat
     depends_on:
       - db
-    command: [ "uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+    command:
+      - uv
+      - run
+      - uvicorn
+      - src.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-    # watch to sync the changes in the backend code to the container
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /app
-          ignore:
-            - .venv/
+      DATABASE_URL: >
+        postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}
+        @${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
 
   db:
-    image: ankane/pgvector:latest
     container_name: laiive-postgres-db
+    image: ankane/pgvector:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -69,7 +58,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       retries: 5
 
