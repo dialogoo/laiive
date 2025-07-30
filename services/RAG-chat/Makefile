@@ -1,6 +1,6 @@
 # installs the dependencies
 deps:
-	rm -rf .venv \
+	rm -rf .venv || true # remove the venv if it exists
 	uv sync --locked
 
 # runs the server

@@ -87,3 +87,6 @@ dmypy.json
 
 # Ignore .envs directories anywhere in the repo
 **/.envs/
+
+# Python version
+.python-version

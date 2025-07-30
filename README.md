@@ -58,20 +58,27 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 #### Development Setup in devcontainer (recommended)
 
-1. Open the devcontainer:
+1. Open the devcontainer: (instructions for VScode)
    ```bash
-   # From the root directory if using VScode
+   # From the root directory
    code .
    # Then click "Reopen in Container" when prompted
    ```
+   alternatively Ctrl+shift+P "DevContainer: Rebuild and reopen in Container"
 
 2. Navigate to desired service directory and install dependencies:
    ```bash
    cd services/<service-name>
    uv sync  # Install Python dependencies using uv
    ```
+   alternatively use the Makefile command
+   ```bash
+   make deps
+   ```
 
 3. Start the development server:
    ```bash
    make dev  # Run the service in development mode
    ```
+
+4. Open localhost:3001 and localhost:8001 to check or use the services ports
