@@ -15,9 +15,11 @@ services:
     ports:
       - "3001:3000"
       - "8001:8000"
+    env_file:
+      - .env
     tty: true
     stdin_open: true
-    command: ["sleep", "infinity"]
+    command: [ "sleep", "infinity" ]
 
   frontend:
     container_name: laiive-frontend
@@ -26,7 +28,7 @@ services:
       - ./services/frontend:/app:cached
     tty: true
     stdin_open: true
-    command: ["sleep", "infinity"]
+    command: [ "sleep", "infinity" ]
     develop:
       watch:
         - action: sync
@@ -42,7 +44,7 @@ services:
       - ./services/RAG-chat:/app:cached
     tty: true
     stdin_open: true
-    command: ["sleep", "infinity"]
+    command: [ "sleep", "infinity" ]
     develop:
       watch:
         - action: sync
