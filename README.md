@@ -27,7 +27,7 @@ laiive links the broken connection between events and public[^*]
 <img width="90" height="90" alt="laiive1" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5"  />
 
 ### UI
-a ZERO CLIC UI is the public view of laiive 
+a ZERO CLIC UI is the public view of laiive
 1st phase:  MVP minimal viable product, streamlit easy app or similar (python base)
 2nd phase: jump into React frontend
 
@@ -46,7 +46,7 @@ Optimized for reliability. A reliable database serves reliable answers.
 
 ### Data
 laiive deals with ephimeral data, data that still doesn't exist, laiive is a dynamic process, that grows in inertia when users use it and promoters push events.
-A Postgres db is the heart of this dynamics and stores all the system knowledge. 
+A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 ---
 
@@ -54,3 +54,24 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 
 
+### instructions
+
+#### Development Setup in devcontainer (recommended)
+
+1. Open the devcontainer:
+   ```bash
+   # From the root directory if using VScode
+   code .
+   # Then click "Reopen in Container" when prompted
+   ```
+
+2. Navigate to desired service directory and install dependencies:
+   ```bash
+   cd services/<service-name>
+   uv sync  # Install Python dependencies using uv
+   ```
+
+3. Start the development server:
+   ```bash
+   make dev  # Run the service in development mode
+   ```

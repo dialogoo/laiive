@@ -1,5 +1,6 @@
 # installs the dependencies
 deps:
+	rm -rf .venv \
 	uv sync --locked
 
 # runs the server
