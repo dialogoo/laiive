@@ -1,8 +1,9 @@
 import streamlit as st
 import requests
 from datetime import date
+from config import settings
 
-API_URL = "http://localhost:8000/chat"
+API_URL = f"{settings.api_url}{settings.api_path}"
 
 st.title("🫦laiive")
 
@@ -56,12 +57,14 @@ def get_laiive_response(
             "filters": {
                 "place": place_filter if place_filter != "All" else None,
                 "date": date_filter.isoformat() if date_filter else None,
-                "date_range": {
-                    "start": date_range[0].isoformat(),
-                    "end": date_range[1].isoformat(),
-                }
-                if date_range is not None
-                else None,
+                "date_range": (
+                    {
+                        "start": date_range[0].isoformat(),
+                        "end": date_range[1].isoformat(),
+                    }
+                    if date_range is not None
+                    else None
+                ),
             },
         }
 
