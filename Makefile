@@ -8,7 +8,7 @@ up-dev:
 	docker-compose up --build
 
 up-prod:
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml up --build
+	docker-compose -f docker-compose.yml up --build
 
 down:
 	docker-compose down

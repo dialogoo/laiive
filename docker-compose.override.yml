@@ -26,8 +26,11 @@ services:
     build: ./services/frontend
     volumes:
       - ./services/frontend:/app:cached
+      - frontend-venv:/app/.venv
     tty: true
     stdin_open: true
+    environment:
+      UV_LINK_MODE: copy
     command: [ "sleep", "infinity" ]
     develop:
       watch:
@@ -42,8 +45,11 @@ services:
     build: ./services/RAG-chat
     volumes:
       - ./services/RAG-chat:/app:cached
+      - backend-venv:/app/.venv
     tty: true
     stdin_open: true
+    environment:
+      UV_LINK_MODE: copy
     command: [ "sleep", "infinity" ]
     develop:
       watch:
@@ -52,3 +58,7 @@ services:
           target: /app
           ignore:
             - .venv/
+
+volumes:
+  frontend-venv:
+  backend-venv:
