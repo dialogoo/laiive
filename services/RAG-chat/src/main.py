@@ -1,10 +1,8 @@
 from loguru import logger
 from fastapi import FastAPI, status
 from pydantic import BaseModel
-from src.config import get_settings
-
-# get the settings
-settings = get_settings()
+from src.config import settings
+from src.rag import get_response
 
 # create the app
 app = FastAPI(
@@ -21,6 +19,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
 
+
 @app.get("/health", status_code=status.HTTP_200_OK)
 def health():
     return {
@@ -28,10 +27,10 @@ def health():
         "user": settings.postgres_user,
     }
 
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     # TODO: Implement actual RAG logic here
-    # For now, return a placeholder response with filter info
     filters_info = ""
     if request.filters:
         place = request.filters.get("place")
@@ -45,13 +44,12 @@ async def chat(request: ChatRequest):
         if date_range:
             filters_info += f" between {date_range['start']} and {date_range['end']}"
 
-    return ChatResponse(
-        response=f"Searching for: '{request.message}'{filters_info}. This is a placeholder response from the RAG system."
-    )
+    return ChatResponse(response=get_response(request.message, request.filters))
+
 
 if __name__ == "__main__":
     import uvicorn
 
     logger.info("Starting RAG-chat server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)  # nosec
+    uvicorn.run(app, host=settings.host, port=settings.port)  # nosec
     logger.info("RAG-chat server started")
