@@ -66,7 +66,7 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
    ```
    alternatively Ctrl+shift+P "DevContainer: Rebuild and reopen in Container"
 
-2. Navigate to desired service directory and install dependencies:
+2. Navigate to desired service directory and install dependencies (once inside the devcontainer):
    ```bash
    cd services/<service-name>
    uv sync  # Install Python dependencies using uv
@@ -78,7 +78,7 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 3. Start the development server:
    ```bash
-   make dev  # Run the service in development mode
+   make run-dev  # Run the service in development mode
    ```
 
-4. Open localhost:3001 and localhost:8001 to check or use the services ports
+4. Open localhost:3001 and localhost:8001 to check or use the services ports. (they are maped from port 3000 to port 3001 and from port 8000 to port 8001 in the devcontainer)

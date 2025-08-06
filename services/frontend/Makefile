@@ -2,7 +2,7 @@ deps:
 	rm -rf .venv \
 	uv sync --locked
 
-run:
+run-dev:
 	uv run streamlit run main.py --server.address 0.0.0.0 --server.port 3000
 
 
