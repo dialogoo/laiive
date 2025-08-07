@@ -48,7 +48,10 @@ if "messages" not in st.session_state:
 
 
 def get_laiive_response(
-    user_message, place_filter=None, date_filter=None, date_range=None
+    user_message,
+    place_filter=None,
+    date_filter=None,
+    date_range=None,
 ):
     try:
         # Prepare the request payload with filters

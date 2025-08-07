@@ -49,3 +49,7 @@ shell-pusher:
 
 shell-workspace:
 	docker exec -it global-workspace sh
+
+all-services-up:
+	cd services/frontend && uv run streamlit run main.py --server.address 0.0.0.0 --server.port 3000 & \
+	cd services/RAG-chat && uv run uvicorn rag_chat.api:app --host 0.0.0.0 --port 8000 --reload
