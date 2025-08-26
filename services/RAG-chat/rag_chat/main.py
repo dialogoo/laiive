@@ -84,6 +84,10 @@ async def get_response(message: str, filters_info: SQLFilter) -> str:
     The filtered events are: {filtered_events}
     The filters are: {filters_info}
 
+    IMPORTANT: If the user asks for a "list" or "all" events, show ALL available events from the filtered results.
+    Do not limit yourself to just 2-3 events unless specifically asked.
+    Format the response as a clear list with all relevant details for each event.
+
     Answer the user message based on the filtered events.
     The answer should be in the same language as the user message.
     """
