@@ -93,3 +93,8 @@ dmypy.json
 
 # Python version
 .python-version
+
+# scraper files
+.scrapy/
+analysis/
+out/
