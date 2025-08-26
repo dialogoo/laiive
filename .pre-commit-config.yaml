@@ -49,7 +49,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        stages: [commit, push]
+        stages: [pre-commit, pre-push]
 
   #######################################################################
   # 5. SQL linting for Postgres migrations & seed scripts
