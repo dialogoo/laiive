@@ -1,22 +1,24 @@
-from datetime import datetime
 from pathlib import Path
 from scrapy.crawler import CrawlerProcess
-from config.py import settings
+from config import settings
+from spiders.eppen_music import EppenMusicSpider
 
 
 def run():
-    # Use the existing out directory where other JSONL files are located
-    out_dir = Path("event_scraper/out")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / f"eppen_music_{datetime.now().strftime('%Y%m%d')}.jsonl"
+    # Convert Pydantic settings to dictionary for Scrapy
+    scrapy_settings = settings.model_dump()
 
-    scrapy_settings  # TODO it requires a dict to continue
+    # Set up output directory
+    out_dir = Path("out")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Add output directory to settings
+    scrapy_settings["OUTPUT_DIR"] = str(out_dir)
 
     process = CrawlerProcess(scrapy_settings)
-    process.crawl("eppen_music")
+    process.crawl(EppenMusicSpider)
     process.start()
 
 
 if __name__ == "__main__":
-    scrapy_settings = settings  # TODO tranform class into dict
     run()
