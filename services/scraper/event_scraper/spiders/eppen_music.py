@@ -1,339 +1,205 @@
 import scrapy
+from pathlib import Path
 from datetime import datetime
-import re
-from urllib.parse import urljoin
+import json
 
 
 class EppenMusicSpider(scrapy.Spider):
-    name = "eppen_music"
-    start_urls = ["https://www.ecodibergamo.it/eventi/eppen"]
+    def __init__(self):
+        self.event_data = []
 
+    name = "eppen_music"
     custom_settings = {
-        "DOWNLOAD_DELAY": 3.0,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
-        "AUTOTHROTTLE_ENABLED": True,
-        "AUTOTHROTTLE_START_DELAY": 3.0,
-        "AUTOTHROTTLE_MAX_DELAY": 10.0,
-        "AUTOTHROTTLE_TARGET_CONCURRENCY": 0.3,
-        "ROBOTSTXT_OBEY": True,
-        "USER_AGENT": "Laiive/0.0.1 (+https://laiive.com/contact)",
-        "COOKIES_ENABLED": False,
-        "HTTPCACHE_ENABLED": False,
-        "DOWNLOAD_TIMEOUT": 30,
-        "RETRY_TIMES": 2,
-        "RETRY_HTTP_CODES": [500, 502, 503, 504, 408, 429],
-        "LOG_LEVEL": "DEBUG",  # Changed to DEBUG for more info
+        "LOG_LEVEL": "DEBUG",
     }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.request_count = 0
-        self.start_time = datetime.now()
-        self.logger.info("=== EPPEN MUSIC EVENTS SCRAPING SESSION STARTED ===")
+    def start_requests(self):
 
-    def parse(self, response):
-        """Parse the main music category page"""
-        self.request_count += 1
-        self.log_metrics()
-
-        self.logger.info(f"Parsing music category page: {response.url}")
-        self.logger.info(f"Response status: {response.status}")
-        self.logger.info(f"Response body length: {len(response.body)}")
-
-        # Save the HTML for debugging
-        with open("debug_response.html", "w", encoding="utf-8") as f:
-            f.write(response.text)
-        self.logger.info("Saved debug_response.html for inspection")
-
-        # Extract event listings from the main page
-        yield from self.extract_event_listings(response)
-
-        # Look for pagination or "load more" functionality
-        yield from self.follow_pagination(response)
-
-    def extract_event_listings(self, response):
-        """Extract event listings from the main music page"""
-        # Look for event containers - try multiple selectors
-        selectors_to_try = [
-            'div[class*="event"]',
-            'div[class*="card"]',
-            "article",
-            ".event-item",
-            ".card",
-            '[class*="event"]',
-            "div",
-            "section",
+        urls = [
+            "https://www.ecodibergamo.it/eventi/eppen/ricerca/?q=&page=1&start_date=&end_date=&category=musica&city=",
+            "https://www.ecodibergamo.it/eventi/eppen/ricerca/?q=&page=2&start_date=&end_date=&category=musica&city=",
+            "https://www.ecodibergamo.it/eventi/eppen/ricerca/?q=&page=3&start_date=&end_date=&category=musica&city=",
+            "https://www.ecodibergamo.it/eventi/eppen/ricerca/?q=&page=4&start_date=&end_date=&category=musica&city=",
+            "https://www.ecodibergamo.it/eventi/eppen/ricerca/?q=&page=5&start_date=&end_date=&category=musica&city=",
         ]
 
-        event_containers = []
-        for selector in selectors_to_try:
-            containers = response.css(selector)
-            self.logger.info(f"Selector '{selector}' found {len(containers)} elements")
-            if containers:
-                event_containers = containers
-                self.logger.info(f"Using selector: {selector}")
-                break
+        for page_num, url in enumerate(urls, 1):
+            yield scrapy.Request(
+                url=url, callback=self.parse, meta={"page_num": page_num}
+            )
 
-        self.logger.info(f"Found {len(event_containers)} potential event containers")
+    def parse(self, response):
+        """Parse response and save HTML content to file."""
+        page_num = response.meta["page_num"]
+        # Sanitize the domain name for filename
+        domain = response.url.split("/")[2].replace(".", "_")
+        page = f"{domain}_page{page_num}"
+        date_str = datetime.now().strftime("%Y%m%d")
+        filename = f"eppenEvents-{page}-{date_str}.html"
 
-        # If no containers found, try to find any content
-        if not event_containers:
-            self.logger.warning("No event containers found, checking page content...")
-            all_text = response.css("::text").getall()
-            self.logger.info(f"Total text elements found: {len(all_text)}")
-            if all_text:
-                self.logger.info(f"First few text elements: {all_text[:5]}")
+        # Get output directory from settings
+        out_dir = Path(self.settings.get("OUTPUT_DIR", "out"))
+        out_file = out_dir / filename
 
-            # Try to find any links
-            all_links = response.css("a::attr(href)").getall()
-            self.logger.info(f"Total links found: {len(all_links)}")
-            if all_links:
-                self.logger.info(f"First few links: {all_links[:5]}")
+        out_file.write_bytes(response.body)
+        self.log(f"Saved file {out_file}")
 
-            # Create a dummy event to see if output works
-            yield {
-                "title": "DEBUG: No events found",
-                "url": response.url,
-                "status": "No event containers detected",
-                "text_elements": len(all_text),
-                "links": len(all_links),
-                "timestamp": datetime.now().isoformat(),
-            }
+        # get all the event links
+        event_links = response.css("h5.card-title a::attr(href)").getall()
+
+        for link in event_links[:5]:  # TODO apply to all links, delete index [:5]
+            if link.startswith("http"):
+                absolute_url = link  # Already absolute
+            else:
+                absolute_url = "https://www.ecodibergamo.it" + link
+
+            yield scrapy.Request(
+                url=absolute_url,
+                callback=self.parse_event_details,
+            )
+
+    def parse_event_details(self, response):
+        """parse each event details"""
+        import json
+
+        # Extract JSON-LD data
+        json_ld = response.xpath('//script[@type="application/ld+json"]/text()').get()
+        event_json = None
+
+        if json_ld:
+            try:
+                event_json = json.loads(json_ld)
+            except json.JSONDecodeError:
+                pass
+
+        event_data = {
+            # Event basic info
+            "event_name": (
+                response.css(".col-12.col-lg-10 h1::text").get() or ""
+            ).strip(),
+            "event_name_2": None,
+            "event_description": response.css(".col-12.col-lg-10 h2::text").get(),
+            "event_genre": (
+                response.css(".col-12.col-lg-10 .article-section-category::text")
+                .getall()[-1]
+                .strip()
+                .split("/")[-1]
+                .strip()
+                if response.css(
+                    ".col-12.col-lg-10 .article-section-category::text"
+                ).getall()
+                else None
+            ),
+            "event_tags": None,
+            "event_image": None,
+            "event_link": response.css("event-detail-sidebar-test a href::text").get(),
+            # Event timing
+            "event_date": (
+                event_json.get("startDate")[:10]
+                if event_json and event_json.get("startDate")
+                else None
+            ),
+            "event_init_hour": (
+                event_json.get("startDate")[11:16]
+                if event_json and event_json.get("startDate")
+                else None
+            ),
+            "event_end_hour": (
+                event_json.get("endDate")[11:16]
+                if event_json and event_json.get("endDate")
+                else None
+            ),
+            "event_comments_hour": None,
+            # Event details
+            "event_language": None,
+            "event_age_restriction": None,
+            # Place information
+            "place_name": None,
+            "place_name_2": None,
+            "place_description": None,
+            "place_address": None,
+            "place_city": None,
+            "place_coordinates": None,
+            "place_link": None,
+            # Artist information (primary artist)
+            "artist_name": None,
+            "artist_description": None,
+            "artist_summary": None,
+            "artist_link": None,
+            "artist_genres": None,
+            # Secondary artist
+            "artist2_name": None,
+            "artist2_description": None,
+            "artist2_summary": None,
+            "artist2_link": None,
+            "artist2_genres": None,
+            # Tertiary artist
+            "artist3_name": None,
+            "artist3_description": None,
+            "artist3_summary": None,
+            "artist3_link": None,
+            "artist3_genres": None,
+            # Pricing information
+            "price_regular": None,
+            "price_discounted1": None,
+            "price_discounted1_comments": None,
+            "price_discounted2": None,
+            "price_discounted2_comments": None,
+            "entrance_link": response.css(".mb-3 a href::text").get(),
+        }
+
+        self.event_data.append(event_data)
+        yield event_data
+
+    def closed(self):
+        """Called when spider finishes - save all collected data"""
+        from datetime import datetime
+
+        # Create proper JSON structure
+        output_data = {
+            "title": "Events Scraped from Eco di Bergamo",
+            "scraped_date": datetime.now().strftime("%Y-%m-%d"),
+            "website": "www.ecodibergamo.it",
+            "total_events": len(self.event_data),
+            "events": self.event_data,
+        }
+
+        filename = f"events_{datetime.now().strftime('%Y%m%d')}.json"
+        out_dir = Path("out")
+        out_dir.mkdir(exist_ok=True)
+
+        with open(out_dir / filename, "w", encoding="utf-8") as f:
+            json.dump(output_data, f, ensure_ascii=False, indent=2)
+
+        self.logger.info(f"Saved {len(self.event_data)} events to {out_dir / filename}")
+
+        # Send data to database
+        self.parse_to_db()
+
+    def parse_to_db(self):
+        """Parse event data and send to database"""
+        from db_parser.parser import DatabaseParser
+
+        if not self.event_data:
+            self.logger.warning("No event data to parse")
             return
 
-        for i, container in enumerate(
-            event_containers[:10]
-        ):  # Limit to first 10 for debugging
-            self.logger.info(f"Processing container {i+1}")
-
-            # Extract basic event info from listing
-            event_data = self.extract_basic_event_info(container, response.url)
-            if event_data:
-                self.logger.info(
-                    f"Extracted event: {event_data.get('title', 'No title')}"
-                )
-                # Follow the detail page link to get full event information
-                detail_link = self.extract_detail_link(container)
-                if detail_link:
-                    full_url = urljoin(response.url, detail_link)
-                    self.logger.info(f"Following detail link: {full_url}")
-                    yield scrapy.Request(
-                        url=full_url,
-                        callback=self.parse_event_detail,
-                        meta={"basic_event_data": event_data},
-                    )
-                else:
-                    # If no detail link, yield what we have
-                    self.logger.info("No detail link found, yielding basic data")
-                    yield event_data
-            else:
-                self.logger.warning(
-                    f"Could not extract event data from container {i+1}"
-                )
-
-    def extract_basic_event_info(self, container, page_url):
-        """Extract basic event information from listing container"""
-        try:
-            # Title - try multiple selectors
-            title_selectors = [
-                "h1",
-                "h2",
-                "h3",
-                "h4",
-                ".title",
-                ".event-title",
-                "strong",
-                "b",
-            ]
-            title = None
-            for selector in title_selectors:
-                title_elem = container.css(f"{selector}::text").get()
-                if title_elem and title_elem.strip():
-                    title = title_elem.strip()
-                    break
-
-            # Date and time
-            date_elem = container.css('.date, .event-date, [class*="date"]::text').get()
-            time_elem = container.css('.time, .event-time, [class*="time"]::text').get()
-
-            # Location
-            location = container.css(
-                '.location, .venue, .place, [class*="location"]::text'
-            ).get()
-            location = location.strip() if location else None
-
-            # Category/tags
-            category = container.css('.category, .tag, [class*="category"]::text').get()
-            category = category.strip() if category else "Musica"
-
-            # Description/summary
-            description = container.css(
-                ".description, .summary, .excerpt, p::text"
-            ).get()
-            description = description.strip() if description else None
-
-            # Image
-            image = container.css("img::attr(src)").get()
-            if image:
-                image = urljoin(page_url, image)
-
-            # Get all text content for debugging
-            all_text = container.css("::text").getall()
-            all_text = [text.strip() for text in all_text if text.strip()]
-
-            if title or all_text:  # Create event if we have any content
-                return {
-                    "title": title,
-                    "date": date_elem.strip() if date_elem else None,
-                    "time": time_elem.strip() if time_elem else None,
-                    "location": location,
-                    "category": category,
-                    "description": description,
-                    "image": image,
-                    "source": "ecodibergamo",
-                    "extraction_method": "music_listing",
-                    "page_url": page_url,
-                    "scraped_at": datetime.now().isoformat(),
-                    "debug_text": all_text[:5],  # First 5 text elements for debugging
-                    "debug_container_class": container.attrib.get("class", "no-class"),
-                }
-
-        except Exception as e:
-            self.logger.error(f"Error extracting basic event info: {e}")
-
-        return None
-
-    def extract_detail_link(self, container):
-        """Extract the link to the event detail page"""
-        # Look for links that contain 'dettaglio' or similar
-        detail_links = container.css('a[href*="dettaglio"]::attr(href)').getall()
-        if detail_links:
-            return detail_links[0]
-
-        # Fallback: look for any link that might be the event link
-        all_links = container.css("a::attr(href)").getall()
-        for link in all_links:
-            if "eventi" in link and not link.startswith("#"):
-                return link
-
-        return None
-
-    def parse_event_detail(self, response):
-        """Parse individual event detail page"""
-        self.request_count += 1
-        self.log_metrics()
-
-        basic_data = response.meta.get("basic_event_data", {})
-
-        self.logger.info(f"Parsing event detail: {response.url}")
-
-        # Extract detailed event information
-        detailed_data = self.extract_detailed_event_info(response)
-
-        # Merge basic and detailed data
-        complete_event = {**basic_data, **detailed_data}
-        complete_event["detail_url"] = response.url
-        complete_event["extraction_method"] = "music_detail_page"
-
-        yield complete_event
-
-    def extract_detailed_event_info(self, response):
-        """Extract detailed information from event detail page"""
-        detailed_data = {}
+        # Initialize database parser
+        db_parser = DatabaseParser("events.db")
 
         try:
-            # Full title (might be more detailed than listing)
-            full_title = response.css("h1, .event-title, .title::text").get()
-            if full_title:
-                detailed_data["full_title"] = full_title.strip()
+            # Insert events into database
+            inserted_count = db_parser.insert_events(
+                events_data=self.event_data, source_website="www.ecodibergamo.it"
+            )
 
-            # Full description
-            description_elements = response.css(
-                ".description, .content, .event-content, article p::text"
-            ).getall()
-            if description_elements:
-                full_description = " ".join(
-                    [elem.strip() for elem in description_elements if elem.strip()]
-                )
-                detailed_data["full_description"] = full_description
+            self.logger.info(
+                f"Successfully inserted {inserted_count} events into database"
+            )
 
-            # Event details
-            details = response.css(".event-details, .details, .info::text").getall()
-            if details:
-                detailed_data["event_details"] = [
-                    detail.strip() for detail in details if detail.strip()
-                ]
-
-            # Additional images
-            images = response.css("img::attr(src)").getall()
-            if images:
-                detailed_data["all_images"] = [
-                    urljoin(response.url, img) for img in images
-                ]
-
-            # Event metadata
-            metadata = response.css(".metadata, .meta, .event-meta::text").getall()
-            if metadata:
-                detailed_data["metadata"] = [
-                    meta.strip() for meta in metadata if meta.strip()
-                ]
-
-            # Price information
-            price = response.css('.price, .cost, [class*="price"]::text').get()
-            if price:
-                detailed_data["price"] = price.strip()
-
-            # Contact information
-            contact = response.css(
-                '.contact, .info-contact, [class*="contact"]::text'
-            ).getall()
-            if contact:
-                detailed_data["contact_info"] = [
-                    c.strip() for c in contact if c.strip()
-                ]
-
-            # Event URL (if different from current page)
-            event_url = response.css(
-                'a[href*="event"], a[href*="ticket"]::attr(href)'
-            ).get()
-            if event_url:
-                detailed_data["event_url"] = urljoin(response.url, event_url)
+            # Get total count
+            total_events = db_parser.get_events_count()
+            self.logger.info(f"Total events in database: {total_events}")
 
         except Exception as e:
-            self.logger.error(f"Error extracting detailed event info: {e}")
-
-        return detailed_data
-
-    def follow_pagination(self, response):
-        """Follow pagination links if they exist"""
-        # Look for pagination links
-        next_page = response.css(
-            ".pagination .next a::attr(href), .next-page::attr(href)"
-        ).get()
-        if next_page:
-            next_url = urljoin(response.url, next_page)
-            self.logger.info(f"Following pagination to: {next_url}")
-            yield scrapy.Request(url=next_url, callback=self.parse)
-
-    def log_metrics(self):
-        """Log basic scraping metrics"""
-        elapsed_time = (datetime.now() - self.start_time).total_seconds()
-        requests_per_minute = (
-            (self.request_count / elapsed_time) * 60 if elapsed_time > 0 else 0
-        )
-
-        self.logger.info(
-            f"Requests: {self.request_count}, Rate: {requests_per_minute:.2f}/min"
-        )
-
-    def closed(self, reason):
-        """Called when spider is closed"""
-        end_time = datetime.now()
-        total_time = (end_time - self.start_time).total_seconds()
-
-        self.logger.info("=== EPPEN MUSIC EVENTS SCRAPING SESSION ENDED ===")
-        self.logger.info(f"Total requests: {self.request_count}")
-        self.logger.info(f"Total time: {total_time:.1f} seconds")
-        self.logger.info(
-            f"Average rate: {(self.request_count / total_time) * 60:.2f} requests/min"
-        )
+            self.logger.error(f"Error inserting events into database: {e}")

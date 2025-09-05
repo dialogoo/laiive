@@ -16,7 +16,7 @@ class ScraperSettings(BaseSettings):
     HTTPCACHE_ENABLED: bool = True
 
     model_config = SettingsConfigDict(
-        env_file=".env.dev",
+        env_file="../.env.dev",
         case_sensitive=False,
         extra="ignore",
     )
