@@ -3,7 +3,9 @@
 <img width="90" height="90" alt="laiive1" src="https://github.com/user-attachments/assets/357725b4-4da2-4463-b9a5-896a29fc4b79" />
 
 #### what is 🫦Laiive
-Laiive is the best way to know what to do, Laiive connect live music places with people. Laiive is a link between life music and public. Just ask, Laiive will answer.[^*]
+Laiive is what will save you from being at home scrolling for the rest of your life.
+Laiive is where you find the perfect life event for you, and is the way to make people know you are doing something.
+If you want to do something now, friday evening, saturday morning... Just ask, Laiive will help you to find what you are looking for outside of the screen[^*]
 
 ![mockup](https://github.com/user-attachments/assets/4f94c5df-6b66-42b8-9925-1314b9987c48)
 
@@ -76,9 +78,17 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
    make deps
    ```
 
-3. Start the development server:
+3. The containers start automatically, but to run the actual services:
    ```bash
-   make run-dev  # Run the service in development mode
+   make run-dev  # Start frontend and backend services
    ```
 
 4. Open localhost:3001 and localhost:8001 to check or use the services ports. (they are maped from port 3000 to port 3001 and from port 8000 to port 8001 in the devcontainer)
+
+
+#### Production Setup (it build and runs all the services at once)
+
+1. Go to the rood directory and run:
+   ```bash
+   make up-prod
+   ```
