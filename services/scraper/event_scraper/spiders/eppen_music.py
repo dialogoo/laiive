@@ -2,6 +2,7 @@ import scrapy
 from pathlib import Path
 from datetime import datetime
 import json
+from db_parser.parser import DatabaseParser
 
 
 class EppenMusicSpider(scrapy.Spider):
@@ -72,14 +73,11 @@ class EppenMusicSpider(scrapy.Spider):
             except json.JSONDecodeError:
                 pass
 
-        event_data = {
-            # Event basic info
-            "event_name": (
-                response.css(".col-12.col-lg-10 h1::text").get() or ""
-            ).strip(),
-            "event_name_2": None,
-            "event_description": response.css(".col-12.col-lg-10 h2::text").get(),
-            "event_genre": (
+        event_data = {  # TODO fill the fields with correct data
+            # CORE EVENT FIELDS (raw data only)
+            "name": (response.css(".col-12.col-lg-10 h1::text").get() or "").strip(),
+            "description": None,
+            "genre": (
                 response.css(".col-12.col-lg-10 .article-section-category::text")
                 .getall()[-1]
                 .strip()
@@ -90,62 +88,105 @@ class EppenMusicSpider(scrapy.Spider):
                 ).getall()
                 else None
             ),
-            "event_tags": None,
-            "event_image": None,
-            "event_link": response.css("event-detail-sidebar-test a href::text").get(),
-            # Event timing
-            "event_date": (
+            "tags": None,
+            "image": None,
+            "link": response.url,
+            # EVENT TIMING
+            "start_date": (
                 event_json.get("startDate")[:10]
                 if event_json and event_json.get("startDate")
                 else None
             ),
-            "event_init_hour": (
+            "start_time": (
                 event_json.get("startDate")[11:16]
                 if event_json and event_json.get("startDate")
                 else None
             ),
-            "event_end_hour": (
+            "end_date": (
+                event_json.get("endDate")[:10]
+                if event_json and event_json.get("endDate")
+                else None
+            ),
+            "end_time": (
                 event_json.get("endDate")[11:16]
                 if event_json and event_json.get("endDate")
                 else None
             ),
-            "event_comments_hour": None,
-            # Event details
-            "event_language": None,
-            "event_age_restriction": None,
-            # Place information
-            "place_name": None,
-            "place_name_2": None,
-            "place_description": None,
-            "place_address": None,
-            "place_city": None,
-            "place_coordinates": None,
-            "place_link": None,
-            # Artist information (primary artist)
-            "artist_name": None,
-            "artist_description": None,
-            "artist_summary": None,
-            "artist_link": None,
-            "artist_genres": None,
-            # Secondary artist
+            # EVENT DETAILS
+            "language": None,
+            "age_restriction": None,
+            "age_recommended": None,
+            "organizer": None,
+            "promoter": None,
+            # CONTACT INFO
+            "contact_name": None,
+            "contact_email": None,
+            "contact_phone": None,
+            # TICKET INFO
+            "ticket_link": response.css(".mb-3 a::attr(href)").get(),
+            # PRICING
+            "price_regular": None,
+            "price_discounted": None,
+            "price_comments": None,
+            # EXTRACTED TEXT
+            "extracted_text": response.css(".col-12.col-lg-10 h2::text").get(),
+            # VENUE DATA (raw venue info)
+            "venue_name": None,
+            "venue_description": None,
+            "venue_address": None,
+            "venue_city": None,
+            "venue_country": None,
+            "venue_capacity": None,
+            "venue_latitude": None,
+            "venue_longitude": None,
+            "venue_link": None,
+            "venue_image": None,
+            "venue_contact_name": None,
+            "venue_contact_email": None,
+            "venue_contact_phone": None,
+            "venue_founded_year": None,
+            # ARTIST DATA (raw artist info)
+            "artist1_name": None,
+            "artist1_description": None,
+            "artist1_summary": None,
+            "artist1_components": None,
+            "artist1_country": None,
+            "artist1_city": None,
+            "artist1_genres": None,
+            "artist1_link": None,
+            "artist1_image": None,
+            "artist1_contact_name": None,
+            "artist1_contact_email": None,
+            "artist1_contact_phone": None,
+            "artist1_founded_year": None,
+            # ARTIST2 DATA
             "artist2_name": None,
             "artist2_description": None,
             "artist2_summary": None,
-            "artist2_link": None,
+            "artist2_components": None,
+            "artist2_country": None,
+            "artist2_city": None,
             "artist2_genres": None,
-            # Tertiary artist
+            "artist2_link": None,
+            "artist2_image": None,
+            "artist2_contact_name": None,
+            "artist2_contact_email": None,
+            "artist2_contact_phone": None,
+            "artist2_founded_year": None,
+            # ARTIST3 DATA
             "artist3_name": None,
             "artist3_description": None,
             "artist3_summary": None,
-            "artist3_link": None,
+            "artist3_components": None,
+            "artist3_country": None,
+            "artist3_city": None,
             "artist3_genres": None,
-            # Pricing information
-            "price_regular": None,
-            "price_discounted1": None,
-            "price_discounted1_comments": None,
-            "price_discounted2": None,
-            "price_discounted2_comments": None,
-            "entrance_link": response.css(".mb-3 a href::text").get(),
+            "artist3_link": None,
+            "artist3_image": None,
+            "artist3_contact_name": None,
+            "artist3_contact_email": None,
+            "artist3_contact_phone": None,
+            "artist3_founded_year": None,
         }
 
         self.event_data.append(event_data)
@@ -178,7 +219,6 @@ class EppenMusicSpider(scrapy.Spider):
 
     def parse_to_db(self):
         """Parse event data and send to database"""
-        from db_parser.parser import DatabaseParser
 
         if not self.event_data:
             self.logger.warning("No event data to parse")
