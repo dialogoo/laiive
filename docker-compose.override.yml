@@ -58,6 +58,15 @@ services:
           target: /app
           ignore:
             - .venv/
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com # pragma: allowlist secret
+      PGADMIN_DEFAULT_PASSWORD: admin # pragma: allowlist secret
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
 
 volumes:
   frontend-venv:
