@@ -98,3 +98,6 @@ dmypy.json
 .scrapy/
 analysis/
 out/
+
+data/
+*/data/
