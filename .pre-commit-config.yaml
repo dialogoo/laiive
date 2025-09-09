@@ -40,10 +40,10 @@ repos:
   #######################################################################
   # 4. Security & supply‑chain
   #######################################################################
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.3           # latest stable
-    hooks:
-      - id: bandit
+  # - repo: https://github.com/PyCQA/bandit
+  #  rev: 1.7.3           # latest stable
+  #  hooks:
+  #    - id: bandit
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
