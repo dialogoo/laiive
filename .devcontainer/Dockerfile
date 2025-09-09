@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pre-commit
-RUN pip install pre-commit
+RUN pip install pre-commit pytest psycopg2-binary pydantic-settings loguru
 
 # Set working directory
 WORKDIR /workspace
