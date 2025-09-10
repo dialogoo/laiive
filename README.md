@@ -33,7 +33,7 @@ a ZERO CLIC UI is the public view of laiive
 1st phase:  MVP minimal viable product, streamlit easy app or similar (python base)
 2nd phase: jump into React frontend
 
-### RAG-chat
+### retriever
 With a simple UI this is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
 1st phase: with llama-index just session id, no user id. just serving info, not extracting info from conversations
 2nd phase. + user id

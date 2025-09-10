@@ -41,10 +41,10 @@ services:
             - .venv/
 
   backend:
-    container_name: laiive-rag-chat-backend
-    build: ./services/RAG-chat
+    container_name: laiive-retriever-backend
+    build: ./services/retriever
     volumes:
-      - ./services/RAG-chat:/app:cached
+      - ./services/retriever:/app:cached
       - backend-venv:/app/.venv
     tty: true
     stdin_open: true

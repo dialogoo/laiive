@@ -1,8 +1,8 @@
 from loguru import logger
 from fastapi import FastAPI, status
 from pydantic import BaseModel
-from rag_chat.config import settings
-from rag_chat.main import get_response
+from retriever.config import settings
+from retriever.main import get_response
 from typing import Optional
 from schemas.chat import (
     DataRange,
@@ -14,8 +14,8 @@ from schemas.chat import (
 
 # create the app
 app = FastAPI(
-    title="RAG-chat",
-    description="RAG-chat is a Chatbot that uses RAG to answer questions about musical life events",
+    title="retriever",
+    description="retriever is a Chatbot that uses RAG to answer questions about musical life events",
     version="0.1.0",
 )
 
@@ -23,7 +23,7 @@ app = FastAPI(
 @app.get("/health", status_code=status.HTTP_200_OK)
 def health():
     return {
-        "msg": "RAG-chat is running, healthy and ready to answer questions",
+        "msg": "retriever is running, healthy and ready to answer questions",
         "user": settings.postgres_user,
     }
 
@@ -48,6 +48,6 @@ async def chat(request: ChatRequest_manual):
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info("Starting RAG-chat server...")
+    logger.info("Starting retriever server...")
     uvicorn.run(app, host=settings.host, port=settings.port)  # nosec
-    logger.info("RAG-chat server started")
+    logger.info("retriever server started")

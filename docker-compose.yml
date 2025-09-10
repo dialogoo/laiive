@@ -14,8 +14,8 @@ services:
       BACKEND_API_PATH: /chat
 
   backend:
-    container_name: laiive-rag-chat-backend
-    build: ./services/RAG-chat
+    container_name: laiive-retriever-backend
+    build: ./services/retriever
     depends_on:
       - db
     ports:

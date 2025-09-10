@@ -40,7 +40,7 @@ db-restore:
 
 # ---------------SHELL FOR DEV INSIDE EACH SERVICE CONTAINER ------------------------------------------------------------------
 shell-backend:
-	docker exec -it laiive-rag-chat-backend sh
+	docker exec -it laiive-retriever-backend sh
 
 shell-frontend:
 	docker exec -it laiive-frontend sh
@@ -56,7 +56,7 @@ shell-workspace:
 
 all-services-up:
 	cd services/frontend && uv run streamlit run main.py --server.address 0.0.0.0 --server.port 3000 & \
-	cd services/RAG-chat && uv run uvicorn rag_chat.api:app --host 0.0.0.0 --port 8000 --reload
+	cd services/retriever && uv run uvicorn retriever.api:app --host 0.0.0.0 --port 8000 --reload
 
 # --------------------TESTS --------------------------------------------------------------------------------------------------
 test-parser:

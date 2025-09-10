@@ -618,7 +618,7 @@ wheels = [
 ]
 
 [[package]]
-name = "rag-chat"
+name = "retriever"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

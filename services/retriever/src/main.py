@@ -1,4 +1,4 @@
-from rag_chat.config import settings
+from retriever.config import settings
 from llama_index.llms.openai import OpenAI
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
