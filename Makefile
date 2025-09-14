@@ -60,4 +60,4 @@ all-services-up:
 
 # --------------------TESTS --------------------------------------------------------------------------------------------------
 test-parser:
-	pytest test/test_parser.py -v -s --log-cli-level=INFO --capture=no --tb=short
+	pytest tests/test_parser.py -v -s --log-cli-level=INFO --capture=no --tb=short

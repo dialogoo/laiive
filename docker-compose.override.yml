@@ -13,8 +13,8 @@ services:
       - frontend
       - db
     ports:
-      - "3001:3000"
-      - "8001:8000"
+      - "3002:3000"
+      - "8002:8000"
     env_file:
       - .env
     tty: true
@@ -58,7 +58,7 @@ services:
           target: /app
           ignore:
             - .venv/
-  pgadmin:
+  pgadmin: # TODO migrate to DBeaver
     image: dpage/pgadmin4
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com # pragma: allowlist secret

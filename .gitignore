@@ -99,5 +99,9 @@ dmypy.json
 analysis/
 out/
 
+# not push data files
 data/
 */data/
+
+# cache files
+*_cache
