@@ -1,8 +1,8 @@
-# services/scraper/db_parser/parser.py
+from pydantic import BaseModel, EmailStr, field_validator
 import psycopg2
 from typing import List, Dict, Any, Optional
 from .config import settings
-from difflib import SequenceMatcher
+from rapidfuzz import fuzz
 from loguru import logger
 import re
 import json
@@ -13,20 +13,18 @@ import os
 class DatabaseParser:
     def __init__(self, database_url: str = None):
         self.database_url = database_url
-        # Simple similarity thresholds
-        self.NAME_SIMILARITY_THRESHOLD = 0.80  # TODO individual thresholds
-
-    # ============================================================================
-    # PUBLIC METHODS
-    # ============================================================================
+        self.NAME_SIMILARITY_THRESHOLD = 0.80
+        self.PERFECT_SIMILARITY_THRESHOLD = 1.0
 
     def get_connection(self):
         """Get database connection"""
         return psycopg2.connect(self.database_url)
 
     def insert_events(self, events_data, source_website="www.ecodibergamo.it"):
-        """Insert events with duplicate checking"""
-        # Set review file name based on source and timestamp
+        """Insert events with duplicate checking with perfect match and rapidfuzz similarity.
+        returns: inserted count"""
+        # TODO improve the insertion logic, check artist and date filtering by place.
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.review_file = (
             f"data/duplicates_to_review_{source_website}_{timestamp}.json"
@@ -40,7 +38,6 @@ class DatabaseParser:
 
         for event in events_data:
             try:
-                # 1. Check for potential duplicate events
                 if self._is_duplicate_event(cursor, event):
                     logger.warning(
                         f"Skipping potential duplicate event: {event.get('name')}"
@@ -48,13 +45,9 @@ class DatabaseParser:
                     skipped_count += 1
                     continue
 
-                # 2. Handle venue with quality checks
                 venue_id = self._handle_venue_simple(cursor, event)
-
-                # 3. Handle artists with quality checks
                 artist_ids = self._handle_artists_simple(cursor, event)
 
-                # 4. Insert event with foreign keys
                 cursor.execute(
                     """
                     INSERT INTO events (
@@ -133,6 +126,37 @@ class DatabaseParser:
         conn.close()
         return count
 
+    def _log_for_review(
+        self,
+        table: str,
+        new_item: dict,
+        existing_item: dict,
+        similarity: float,
+        event_data: dict = None,
+    ):
+        """function to save the logs for review in case of insert duplicate doubt"""
+
+        review_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "table": table,
+            "similarity": round(similarity, 3),
+            "action": "REVIEW_REQUIRED",
+            "new_item": new_item,
+            "existing_item": existing_item,
+            "decision": None,
+        }
+
+        try:
+            with open(self.review_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(review_entry, ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.error(f"Error writing to review file: {e}")
+
+        logger.warning(
+            f"REVIEW NEEDED - {table}: '{new_item.get('name')}' vs '{existing_item.get('name')}' "
+            f"(similarity: {similarity:.3f})"
+        )
+
     def get_review_summary(
         self,
     ) -> Dict[
@@ -171,15 +195,11 @@ class DatabaseParser:
         except FileNotFoundError:
             return {"total_pending": 0, "by_table": {}, "pending_reviews": []}
 
-    def clear_review_file(self):
+    def remove_review_file(self):
         """Clear the review file"""
         if os.path.exists(self.review_file):
             os.remove(self.review_file)
             logger.info("Cleared review file")
-
-    # ============================================================================
-    # PRIVATE HELPER METHODS - TEXT PROCESSING
-    # ============================================================================
 
     def _normalize_text(self, text: str) -> str:
         """Normalize text for comparison"""
@@ -193,172 +213,113 @@ class DatabaseParser:
         """Calculate similarity between two texts"""
         if not text1 or not text2:
             return 0.0
-        return SequenceMatcher(
+        return fuzz.ratio(
             None, self._normalize_text(text1), self._normalize_text(text2)
-        ).ratio()
-
-    def _log_for_review(
-        self,
-        table: str,
-        new_item: dict,
-        existing_item: dict,
-        similarity: float,
-        event_data: dict = None,
-    ):
-        review_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "table": table,
-            "similarity": round(similarity, 3),
-            "action": "REVIEW_REQUIRED",
-            "new_item": new_item,
-            "existing_item": existing_item,
-            "decision": None,
-        }
-
-        try:
-            with open(self.review_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(review_entry, ensure_ascii=False) + "\n")
-        except Exception as e:
-            logger.error(f"Error writing to review file: {e}")
-
-        logger.warning(
-            f"REVIEW NEEDED - {table}: '{new_item.get('name')}' vs '{existing_item.get('name')}' "
-            f"(similarity: {similarity:.3f})"
         )
 
-    # ============================================================================
-    # PRIVATE HELPER METHODS - DUPLICATE DETECTION
-    # ============================================================================
+    def _find_duplicate_entity(
+        self, cursor, table_name: str, name: str, entity_type: str = "entity"
+    ) -> Optional[tuple]:
+        """this method is to find duplicates with exact match and with fuzzysearch
+        level one checks for exact match
+        second level check for rapidfuzz match
+        """
+        if not name or not name.strip():
+            return None
+
+        # Level 1: Exact match (case-sensitive)
+        cursor.execute(f"SELECT id, name FROM {table_name} WHERE name = %s", (name,))
+        exact_match = cursor.fetchone()
+        if exact_match:
+            logger.info(
+                f"{entity_type.title()} exact match found: '{name}' (ID: {exact_match[0]})"
+            )
+            return (exact_match[0], "exact", exact_match[1])
+        # Level 2: Similarity-based match (only if no exact matches found)
+        self._find_similar_entity(cursor, table_name, name, entity_type)
+
+    def _find_similar_entity(
+        self, cursor, table_name: str, name: str, entity_type: str
+    ) -> Optional[tuple]:
+        """Find similar entities using similarity calculation"""
+        cursor.execute(f"SELECT id, name FROM {table_name}")
+        all_entities = cursor.fetchall()
+
+        for entity_id, existing_name in all_entities:
+            similarity = self._calculate_similarity(name, existing_name)
+
+            if similarity >= self.PERFECT_SIMILARITY_THRESHOLD:  # Perfect match
+                logger.info(
+                    f"{entity_type.title()} perfect similarity match: '{name}' vs '{existing_name}' (similarity: {similarity:.3f})"
+                )
+                return (entity_id, "perfect_similarity", existing_name)
+            elif similarity > self.NAME_SIMILARITY_THRESHOLD:  # Potential duplicate
+                logger.warning(
+                    f"REVIEW NEEDED - for manual entry- {entity_type}: '{name}' vs '{existing_name}' (similarity: {similarity:.3f})"
+                )  # TODO this step could be done by an Agent. or at least semi automated.
+                self._log_for_review(
+                    entity_type,
+                    {"name": name, "id": "NEW"},
+                    {"name": existing_name, "id": entity_id},
+                    similarity,
+                )
+                return (entity_id, "similarity", existing_name)
+
+        return None
 
     def _is_duplicate_event(self, cursor, event) -> bool:
-        """Check if event is a duplicate - exact match first, then similarity"""
+        """Check if event is a duplicate using standardized 4-level detection"""
         event_name = event.get("name")
         if not event_name:
             return False
 
-        # 1. Try exact match first (most efficient)
-        cursor.execute("SELECT id, name FROM events WHERE name = %s", (event_name,))
-        exact_match = cursor.fetchone()
-        if exact_match:
-            logger.info(
-                f"Event already exists (exact match): '{event_name}' - skipping entry"
-            )
-            return True
-
-        # 2. Try case-insensitive match
-        cursor.execute(
-            "SELECT id, name FROM events WHERE LOWER(name) = LOWER(%s)", (event_name,)
+        duplicate_result = self._find_duplicate_entity(
+            cursor, "events", event_name, "event"
         )
-        case_insensitive_match = cursor.fetchone()
-        if case_insensitive_match:
+        if duplicate_result:
+            entity_id, match_type, existing_name = duplicate_result
             logger.info(
-                f"Event already exists (case-insensitive): '{event_name}' vs '{case_insensitive_match[1]}' - skipping entry"
+                f"Event duplicate found ({match_type}): '{event_name}' - skipping entry"
             )
             return True
 
-        # 3. Check for similar events (only if no exact match found)
-        cursor.execute("SELECT id, name FROM events")
-        existing_events = cursor.fetchall()
-
-        for existing_id, existing_name in existing_events:
-            similarity = self._calculate_similarity(event_name, existing_name)
-
-            if similarity >= 1.0:  # Perfect match
-                logger.info(
-                    f"Event already exists (perfect similarity): '{event_name}' - skipping entry"
-                )
-                return True
-            elif similarity > self.NAME_SIMILARITY_THRESHOLD:  # Potential duplicate
-                logger.warning(
-                    f"REVIEW NEEDED - events: '{event_name}' vs '{existing_name}' (similarity: {similarity:.3f})"
-                )
-                self._log_for_review(
-                    "events",
-                    {"name": event_name, "id": "NEW"},
-                    {"name": existing_name, "id": existing_id},
-                    similarity,
-                    event,
-                )
-                return True
-
-        return False  # No duplicate found
-
-    # ============================================================================
-    # PRIVATE HELPER METHODS - VENUE HANDLING
-    # ============================================================================
+        return False
 
     def _handle_venue_simple(self, cursor, event) -> Optional[int]:
-        """Handle venue with simple name matching - only creates venues when data exists"""
+        """Handle venue with standardized 4-level duplicate detection"""
         venue_name = event.get("venue_name")
         if not venue_name or not venue_name.strip():
             return None
 
-        # 1. Try exact match first (most efficient)
-        cursor.execute("SELECT id, name FROM venues WHERE name = %s", (venue_name,))
-        exact_match = cursor.fetchone()
-        if exact_match:
-            logger.debug(
-                f"Exact venue match found: '{venue_name}' (ID: {exact_match[0]})"
-            )
-            return exact_match[0]
-
-        # 2. Try case-insensitive match
-        cursor.execute(
-            "SELECT id, name FROM venues WHERE LOWER(name) = LOWER(%s)", (venue_name,)
+        duplicate_result = self._find_duplicate_entity(
+            cursor, "venues", venue_name, "venue"
         )
-        case_insensitive_match = cursor.fetchone()
-        if case_insensitive_match:
+        if duplicate_result:
+            entity_id, match_type, existing_name = duplicate_result
             logger.info(
-                f"Case-insensitive venue match: '{venue_name}' vs '{case_insensitive_match[1]}' (ID: {case_insensitive_match[0]})"
+                f"venue duplicate found ({match_type}): '{venue_name}' - skipping entry"
             )
-            return case_insensitive_match[0]
+            return entity_id
 
-        # 3. Try trimmed match (remove extra spaces)
-        trimmed_name = venue_name.strip()
-        if trimmed_name != venue_name:
-            cursor.execute(
-                "SELECT id, name FROM venues WHERE name = %s", (trimmed_name,)
-            )
-            trimmed_match = cursor.fetchone()
-            if trimmed_match:
-                logger.info(
-                    f"Trimmed venue match: '{venue_name}' vs '{trimmed_match[1]}' (ID: {trimmed_match[0]})"
-                )
-                return trimmed_match[0]
-
-        # 4. Only if no exact matches, check for similar venues (expensive operation)
-        if self._should_check_similarity():
-            return self._check_similar_venues(cursor, venue_name)
-
-        # 5. No match found, create new venue
+        # No duplicate found, create new venue
         return self._insert_new_venue(cursor, event)
 
-    def _should_check_similarity(self) -> bool:
-        """Decide if we should check for similar venues (can be based on venue count)"""
-        # For now, always check, but you could add logic like:
-        # - Only check if venue count < 1000
-        # - Only check for certain venue types
-        # - Add a configuration flag
-        return True
+    def _handle_single_artist_simple(self, cursor, event, artist_num: int) -> int:
+        """Handle a single artist with standardized 4-level duplicate detection"""
+        artist_name = event.get(f"artist{artist_num}_name")
 
-    def _check_similar_venues(self, cursor, venue_name):
-        """Check for similar venues using similarity calculation"""
-        cursor.execute("SELECT id, name FROM venues")
-        all_venues = cursor.fetchall()
+        duplicate_result = self._find_duplicate_entity(
+            cursor, "artists", artist_name, "artist"
+        )
+        if duplicate_result:
+            entity_id, match_type, existing_name = duplicate_result
+            logger.info(
+                f"artist duplicate found ({match_type}): '{artist_name}' - skipping entry"
+            )
+            return entity_id
 
-        for venue_id, existing_name in all_venues:
-            similarity = self._calculate_similarity(venue_name, existing_name)
-            if similarity > self.NAME_SIMILARITY_THRESHOLD:
-                self._log_for_review(
-                    "venues",
-                    {"name": venue_name, "id": "NEW"},
-                    {"name": existing_name, "id": venue_id},
-                    similarity,
-                )
-                logger.warning(
-                    f"Similar venue found: '{venue_name}' vs '{existing_name}' (similarity: {similarity:.3f}) - logged for review"
-                )
-                return venue_id
+        # No duplicate found, create new artist
+        return self._insert_new_artist(cursor, event, artist_num)
 
     def _insert_new_venue(self, cursor, event) -> int:
         """Insert a new venue"""
@@ -391,10 +352,6 @@ class DatabaseParser:
         logger.info(f"Inserted new venue: {event.get('venue_name')} (ID: {venue_id})")
         return venue_id
 
-    # ============================================================================
-    # PRIVATE HELPER METHODS - ARTIST HANDLING
-    # ============================================================================
-
     def _handle_artists_simple(self, cursor, event) -> List[Optional[int]]:
         """Handle artists with simple name matching - only creates artists when data exists"""
         artist_ids = [None] * 10  # Initialize with None values
@@ -411,37 +368,6 @@ class DatabaseParser:
             # If no artist name, leave as None (no default artist creation)
 
         return artist_ids
-
-    def _handle_single_artist_simple(self, cursor, event, artist_num: int) -> int:
-        """Handle a single artist with simple name matching - only called when artist data exists"""
-        artist_name = event.get(f"artist{artist_num}_name")
-
-        # First, try exact match
-        cursor.execute("SELECT id, name FROM artists WHERE name = %s", (artist_name,))
-        exact_match = cursor.fetchone()
-
-        if exact_match:
-            return exact_match[0]  # Return existing artist_id
-
-        # Check for similar artists
-        cursor.execute("SELECT id, name FROM artists")
-        all_artists = cursor.fetchall()
-
-        for artist_id, existing_name in all_artists:
-            similarity = self._calculate_similarity(artist_name, existing_name)
-
-            if similarity > self.NAME_SIMILARITY_THRESHOLD:
-                # Log for human review
-                self._log_for_review(
-                    "artists",
-                    {"name": artist_name, "id": "NEW"},
-                    {"name": existing_name, "id": artist_id},
-                    similarity,
-                )
-                return artist_id  # Use existing artist
-
-        # No similar artist found, create new one
-        return self._insert_new_artist(cursor, event, artist_num)
 
     def _insert_new_artist(self, cursor, event, artist_num: int) -> int:
         """Insert a new artist - always returns an artist ID"""
@@ -480,14 +406,13 @@ def main():
     database_url = settings.POSTGRES_URL
     parser = DatabaseParser(database_url)
 
-    # Show review summary
     review_summary = parser.get_review_summary()
-    print("=== REVIEW SUMMARY ===")
-    print(f"Total pending reviews: {review_summary['total_pending']}")
+    logger.info("=== REVIEW SUMMARY ===")
+    logger.info(f"Total pending reviews: {review_summary['total_pending']}")
     for table, count in review_summary["by_table"].items():
         print(f"{table}: {count} pending")
 
-    print(f"\nTotal events: {parser.get_events_count()}")
+    logger.info(f"\nTotal events: {parser.get_events_count()}")
 
     conn = parser.get_connection()
     cursor = conn.cursor()

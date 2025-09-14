@@ -2,14 +2,20 @@ import scrapy
 from pathlib import Path
 from datetime import datetime
 import json
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from db_parser.parser import DatabaseParser
 
 
 class EppenMusicSpider(scrapy.Spider):
+    name = "eppen_music"
+    BASE_URL = "https://www.ecodibergamo.it"
+
     def __init__(self):
         self.event_data = []
 
-    name = "eppen_music"
     custom_settings = {
         "LOG_LEVEL": "DEBUG",
     }
@@ -30,29 +36,26 @@ class EppenMusicSpider(scrapy.Spider):
             )
 
     def parse(self, response):
-        """Parse response and save HTML content to file."""
+        """Parameters to parse the main pages of the site and save the HTML content to file."""
+        # name and save the file
         page_num = response.meta["page_num"]
-        # Sanitize the domain name for filename
         domain = response.url.split("/")[2].replace(".", "_")
         page = f"{domain}_page{page_num}"
         date_str = datetime.now().strftime("%Y%m%d")
         filename = f"eppenEvents-{page}-{date_str}.html"
-
-        # Get output directory from settings
         out_dir = Path(self.settings.get("OUTPUT_DIR", "out"))
         out_file = out_dir / filename
-
         out_file.write_bytes(response.body)
         self.log(f"Saved file {out_file}")
+        url = "https://www.ecodibergamo.it"
 
-        # get all the event links
         event_links = response.css("h5.card-title a::attr(href)").getall()
 
         for link in event_links[:5]:  # TODO apply to all links, delete index [:5]
             if link.startswith("http"):
-                absolute_url = link  # Already absolute
+                absolute_url = link
             else:
-                absolute_url = "https://www.ecodibergamo.it" + link
+                absolute_url = self.BASE_URL + link
 
             yield scrapy.Request(
                 url=absolute_url,
@@ -60,9 +63,9 @@ class EppenMusicSpider(scrapy.Spider):
             )
 
     def parse_event_details(self, response):
-        """parse each event details"""
-        import json
-
+        """function to parse each event details
+        return a json file
+        """
         # Extract JSON-LD data
         json_ld = response.xpath('//script[@type="application/ld+json"]/text()').get()
         event_json = None
@@ -192,15 +195,12 @@ class EppenMusicSpider(scrapy.Spider):
         self.event_data.append(event_data)
         yield event_data
 
-    def closed(self):
-        """Called when spider finishes - save all collected data"""
-        from datetime import datetime
-
-        # Create proper JSON structure
+    def closed(self, reason):
+        """Scrapy method called when spider finishes - save all collected data"""
         output_data = {
             "title": "Events Scraped from Eco di Bergamo",
             "scraped_date": datetime.now().strftime("%Y-%m-%d"),
-            "website": "www.ecodibergamo.it",
+            "website": self.BASE_URL,
             "total_events": len(self.event_data),
             "events": self.event_data,
         }
@@ -219,25 +219,24 @@ class EppenMusicSpider(scrapy.Spider):
 
     def parse_to_db(self):
         """Parse event data and send to database"""
-
         if not self.event_data:
             self.logger.warning("No event data to parse")
             return
 
-        # Initialize database parser
-        db_parser = DatabaseParser("events.db")
+        from db_parser.config import settings
+
+        db_parser = DatabaseParser(settings.POSTGRES_URL)
 
         try:
-            # Insert events into database
             inserted_count = db_parser.insert_events(
-                events_data=self.event_data, source_website="www.ecodibergamo.it"
+                events_data=self.event_data,
+                source_website=self.BASE_URL,
             )
 
             self.logger.info(
                 f"Successfully inserted {inserted_count} events into database"
             )
 
-            # Get total count
             total_events = db_parser.get_events_count()
             self.logger.info(f"Total events in database: {total_events}")
 
