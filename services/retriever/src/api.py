@@ -1,18 +1,32 @@
 from loguru import logger
 from fastapi import FastAPI, status
 from pydantic import BaseModel
+from typing import Optional
 from retriever.config import settings
 from retriever.main import get_response
-from typing import Optional
-from schemas.chat import (
-    DataRange,
-    SQLFilter,
-    ChatRequest_manual,
-    ChatRequest,
-    ChatResponse,
-)
 
-# create the app
+
+# Schemas defined inline TODO if API endpoints > 15 move Schemas to schemas file.
+class DataRange(BaseModel):
+    start: str
+    end: str
+
+
+class SQLFilter(BaseModel):
+    date_range: Optional[DataRange] = None
+    place: Optional[str] = None
+
+
+class ChatRequest(BaseModel):
+    message: str
+    filters: Optional[SQLFilter] = None
+
+
+class ChatResponse(BaseModel):
+    response: str
+
+
+# Create the app
 app = FastAPI(
     title="retriever",
     description="retriever is a Chatbot that uses RAG to answer questions about musical life events",
@@ -24,24 +38,14 @@ app = FastAPI(
 def health():
     return {
         "msg": "retriever is running, healthy and ready to answer questions",
-        "user": settings.postgres_user,
+        "status": "healthy"
     }
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest_manual):
-    filters_dict = request.filters
-
-    date_range_obj = None
-    if filters_dict.get("date_range"):
-        date_range_dict = filters_dict["date_range"]
-        date_range_obj = DataRange(
-            start=date_range_dict["start"], end=date_range_dict["end"]
-        )
-
-    sql_filters = SQLFilter(date_range=date_range_obj, place=filters_dict.get("place"))
-
-    response = await get_response(request.message, sql_filters)
+async def chat(request: ChatRequest):
+    """Simplified chat endpoint with proper Pydantic validation"""
+    response = await get_response(request.message, request.filters)
     return ChatResponse(response=response)
 
 

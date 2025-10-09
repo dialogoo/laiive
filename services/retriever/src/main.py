@@ -28,26 +28,28 @@ async def get_response(message: str, filters_info: SQLFilter) -> str:
     logger.debug(f"Filters: {filters_info}")
 
     def format_date_range(date_range: DataRange) -> str:
-        return (
-            f"event_date >= '{date_range.start}' AND event_date <= '{date_range.end}'"
-        )
+        return "event_date >= :start_date AND event_date <= :end_date"
 
     def format_place_filter(place: str) -> str:
-        return f"place_city ILIKE '%{place}%'"  # Use ILIKE for case-insensitive search
+        return "place_city ILIKE :place_pattern"
 
-    def build_query(filters_info: SQLFilter) -> str:
+    def build_query(filters_info: SQLFilter) -> tuple[str, dict]:
         base_query = "SELECT * FROM events"
         conditions = []
+        params = {}
 
         # Add date range filter
         if filters_info.date_range:
             date_condition = format_date_range(filters_info.date_range)
             conditions.append(date_condition)
+            params['start_date'] = filters_info.date_range.start
+            params['end_date'] = filters_info.date_range.end
 
         # Add place filter
         if filters_info.place:
             place_condition = format_place_filter(filters_info.place)
             conditions.append(place_condition)
+            params['place_pattern'] = f"%{filters_info.place}%"
 
         # Build final query
         if conditions:
@@ -56,8 +58,15 @@ async def get_response(message: str, filters_info: SQLFilter) -> str:
             query = base_query
 
         logger.info(f"Generated SQL query: {query}")
-        return query
+        return query, params
 
+    async def query_db(filters_info: SQLFilter) -> str:
+        try:
+            query, params = build_query(filters_info)
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(sqlalchemy.text(query), params)
+                rows = result.fetchall()
+                return str([dict(row._mapping) for row in rows])
     async def query_db(filters_info: SQLFilter) -> str:
         try:
             query = build_query(filters_info)
@@ -92,15 +101,8 @@ async def get_response(message: str, filters_info: SQLFilter) -> str:
     The answer should be in the same language as the user message.
     """
 
-    try:
-        response = llm.complete(prompt)  # Use complete() for LlamaIndex
-        return response.text
-    except Exception as e:
-        logger.error(f"Error getting response: {e}")
-        return f"Error getting response: {str(e)}"
+from pydantic import ValidationError
 
-
-# TODO: move to a separate file to extract the filters directly from the message
 def get_sql_filters(message: str) -> SQLFilter:
     """
     Extract the SQL filters from the message
@@ -125,12 +127,20 @@ def get_sql_filters(message: str) -> SQLFilter:
     """
 
     try:
-        response = llm.complete(prompt)  # Use complete() for LlamaIndex
+        response = llm.complete(prompt)
+        logger.debug(f"Raw LLM response: {response.text}")
+
         filter_data = json.loads(response.text.strip())
+
+        # Validate expected structure
+        if not isinstance(filter_data, dict):
+            raise ValueError(f"Expected dict, got {type(filter_data)}")
 
         # Convert date strings to date objects
         date_range = None
         if filter_data.get("date_range"):
+            if not isinstance(filter_data["date_range"], list) or len(filter_data["date_range"]) != 2:
+                raise ValueError(f"Invalid date_range format: {filter_data['date_range']}")
             start_date = datetime.strptime(
                 filter_data["date_range"][0], "%Y-%m-%d"
             ).date()
@@ -141,6 +151,20 @@ def get_sql_filters(message: str) -> SQLFilter:
 
         sql_filter = SQLFilter(
             date_range=date_range,
+            place=filter_data.get("place"),
+        )
+        logger.info(f"SQL filters: {sql_filter}")
+        return sql_filter
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse LLM response as JSON: {e}. Response: {response.text[:200]}")
+        return SQLFilter()
+    except (ValueError, KeyError, ValidationError) as e:
+        logger.error(f"Invalid filter data structure: {e}. Data: {filter_data}")
+        return SQLFilter()
+    except Exception as e:
+        logger.error(f"Unexpected error extracting SQL filters: {e}", exc_info=True)
+    return SQLFilter()            date_range=date_range,
             place=filter_data.get("place"),
         )
         logger.info(f"SQL filters: {sql_filter}")
