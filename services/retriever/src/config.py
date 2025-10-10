@@ -19,10 +19,15 @@ class Settings(BaseSettings):
     host: str = Field(..., alias="HOST")
     port: int = Field(..., alias="PORT")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+from pydantic_settings import SettingsConfigDict
 
+class Settings(BaseSettings):
+    # ... fields ...
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+    )
 
 settings = Settings()
