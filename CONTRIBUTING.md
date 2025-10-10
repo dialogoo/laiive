@@ -5,8 +5,7 @@ Thanks for helping improve **laiive**!
 ---
 
 ## Agreement
-By cloning, forking, or making a pull request, you **accept** the [Collaborator Agreement](./LICENSES/COLLABOATOR_AGREEMENT.md).
-If you don’t agree, please don’t contribute.
+By cloning, forking, or making a pull request, you **accept** the [Collaborator Agreement](./LICENSES/COLLABORATOR_AGREEMENT.md).If you don’t agree, please don’t contribute.
 
 ---
 

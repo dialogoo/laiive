@@ -1,7 +1,6 @@
 # Collaborator Agreement
 
-**Effective Date:** 02-09-2025
-**Parties:** Oscar Arroyo Vega (“Owner”) and any individual granted access to this repository as a contributor (“Collaborator”), with respect to the private repository of the project **laiive**, under the organization **dialogoo**.
+**Effective Date:** February 9, 2025**Parties:** Oscar Arroyo Vega (“Owner”) and any individual granted access to this repository as a contributor (“Collaborator”), with respect to the private repository of the project **laiive**, under the organization **dialogoo**.
 
 ---
 
