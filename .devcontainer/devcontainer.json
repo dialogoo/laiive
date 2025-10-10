@@ -14,7 +14,7 @@
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
   },
-  "postStartCommand": "git config --global --add safe.directory '*' && pre-commit install",
+  "postStartCommand": "git config --global --add safe.directory /workspace && pre-commit install",
   "customizations": {
     "vscode": {
       "extensions": [
