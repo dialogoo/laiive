@@ -23,9 +23,9 @@ db-exec:
 	docker exec -it laiive-postgres-db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
 
 # Backup the entire laiive database (schema + data)
+# Backup the entire laiive database (schema + data)
 db-backup:
-	docker exec laiive-postgres-db pg_dump -U ${POSTGRES_USER} -d ${POSTGRES_DB} > data/laiive_backup.sql
-
+	docker exec laiive-postgres-db pg_dump -U ${POSTGRES_USER} -d ${POSTGRES_DB} > data/laiive_backup_$(shell date +%Y%m%d_%H%M%S).sql
 # Backup only the schema (no data)
 db-backup-schema:
 	docker exec laiive-postgres-db pg_dump -U ${POSTGRES_USER} -d ${POSTGRES_DB} --schema-only > data/laiive_schema_backup.sql
