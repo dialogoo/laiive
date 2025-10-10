@@ -88,7 +88,6 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 #### Production Setup (it build and runs all the services at once)
 
-1. Go to the rood directory and run:
-   ```bash
+1. Go to the root directory and run:   ```bash
    make up-prod
    ```
