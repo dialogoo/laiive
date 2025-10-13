@@ -8,8 +8,8 @@ workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, workspace_root)
 
 # Now import from services
-from services.scraper.db_parser.parser import DatabaseParser
-from services.scraper.db_parser.config import settings
+from services.parser.parser import DatabaseParser
+from services.parser.config import settings
 from loguru import logger
 
 

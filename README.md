@@ -52,9 +52,15 @@ A Postgres db is the heart of this dynamics and stores all the system knowledge.
 
 ---
 
-[^*]: © laiive. All strategic documents, diagrams, mockups, and planning materials contained in this repository are the intellectual property of Laiive and are provided solely for reference purposes. Unauthorized reproduction, distribution, reverse engineering, or commercial use of these materials is strictly prohibited without prior written consent from Laiive. For questions regarding usage rights or licensing, please contact: info@laiive.com.
+[^*]: © 2025 Oscar Arroyo Vega. This project is licensed under the Apache License 2.0. You are free to use, modify, and distribute this software for any purpose, including commercial use, under the terms of the Apache 2.0 License. See the LICENSE file for details.
 
+## License
 
+This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSES/LICENSE) file for details.
+
+Copyright 2025 Oscar Arroyo Vega
+
+---
 
 ### instructions
 

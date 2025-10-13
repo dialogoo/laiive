@@ -17,13 +17,10 @@ class DatabaseParser:
         self.PERFECT_SIMILARITY_THRESHOLD = 1.0
 
     def get_connection(self):
-        """Get database connection"""
         return psycopg2.connect(self.database_url)
 
     def insert_events(self, events_data, source_website="www.ecodibergamo.it"):
-        """Insert events with duplicate checking with perfect match and rapidfuzz similarity.
-        returns: inserted count"""
-        # TODO improve the insertion logic, check artist and date filtering by place.
+        # TODO improve the insertion logic, check artist and date filtering by place. add pydantic for type verification
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.review_file = (
@@ -118,7 +115,6 @@ class DatabaseParser:
         return inserted_count
 
     def get_events_count(self) -> int:
-        """Get total number of events in database"""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM events")
@@ -134,7 +130,6 @@ class DatabaseParser:
         similarity: float,
         event_data: dict = None,
     ):
-        """function to save the logs for review in case of insert duplicate doubt"""
 
         review_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -162,7 +157,6 @@ class DatabaseParser:
     ) -> Dict[
         str, Any
     ]:  # TODO add all the data for review and check reviews for artists and venues
-        """Get summary of items pending review"""
         try:
             with open(self.review_file, "r", encoding="utf-8") as f:
                 lines = f.readlines()
@@ -172,12 +166,11 @@ class DatabaseParser:
                 if line.strip():
                     try:
                         entry = json.loads(line.strip())
-                        if entry.get("decision") is None:  # Not yet reviewed
+                        if entry.get("decision") is None:  # TODO Not yet reviewed
                             pending_reviews.append(entry)
                     except json.JSONDecodeError:
                         continue
 
-            # Group by table
             by_table = {}
             for review in pending_reviews:
                 table = review["table"]
@@ -196,13 +189,11 @@ class DatabaseParser:
             return {"total_pending": 0, "by_table": {}, "pending_reviews": []}
 
     def remove_review_file(self):
-        """Clear the review file"""
         if os.path.exists(self.review_file):
             os.remove(self.review_file)
             logger.info("Cleared review file")
 
     def _normalize_text(self, text: str) -> str:
-        """Normalize text for comparison"""
         if not text:
             return ""
         normalized = re.sub(r"[^\w\s]", "", text.lower().strip())
@@ -210,7 +201,6 @@ class DatabaseParser:
         return normalized
 
     def _calculate_similarity(self, text1: str, text2: str) -> float:
-        """Calculate similarity between two texts"""
         if not text1 or not text2:
             return 0.0
         return fuzz.ratio(
@@ -220,10 +210,6 @@ class DatabaseParser:
     def _find_duplicate_entity(
         self, cursor, table_name: str, name: str, entity_type: str = "entity"
     ) -> Optional[tuple]:
-        """this method is to find duplicates with exact match and with fuzzysearch
-        level one checks for exact match
-        second level check for rapidfuzz match
-        """
         if not name or not name.strip():
             return None
 
@@ -235,13 +221,12 @@ class DatabaseParser:
                 f"{entity_type.title()} exact match found: '{name}' (ID: {exact_match[0]})"
             )
             return (exact_match[0], "exact", exact_match[1])
-        # Level 2: Similarity-based match (only if no exact matches found)
+
         self._find_similar_entity(cursor, table_name, name, entity_type)
 
     def _find_similar_entity(
         self, cursor, table_name: str, name: str, entity_type: str
     ) -> Optional[tuple]:
-        """Find similar entities using similarity calculation"""
         cursor.execute(f"SELECT id, name FROM {table_name}")
         all_entities = cursor.fetchall()
 
@@ -268,7 +253,6 @@ class DatabaseParser:
         return None
 
     def _is_duplicate_event(self, cursor, event) -> bool:
-        """Check if event is a duplicate using standardized 4-level detection"""
         event_name = event.get("name")
         if not event_name:
             return False

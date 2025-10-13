@@ -5,8 +5,8 @@ import json
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from db_parser.parser import DatabaseParser
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from parser.parser import DatabaseParser
 
 
 class EppenMusicSpider(scrapy.Spider):
@@ -223,7 +223,7 @@ class EppenMusicSpider(scrapy.Spider):
             self.logger.warning("No event data to parse")
             return
 
-        from db_parser.config import settings
+        from parser.config import settings
 
         db_parser = DatabaseParser(settings.POSTGRES_URL)
 
