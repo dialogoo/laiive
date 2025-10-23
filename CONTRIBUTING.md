@@ -5,7 +5,7 @@ Thanks for helping improve **laiive**!
 ---
 
 ## Agreement
-Take a look to the [Collaborator Agreement](./LICENSES/COLLABORATOR_AGREEMENT.md).
+Take a look to the [Collaborator Agreement](LICENSES/COLLABOATOR_AGREEMENT.md).
 
 ---
 
