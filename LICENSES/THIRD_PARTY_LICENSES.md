@@ -16,8 +16,6 @@ This project includes and depends on the following open source libraries:
 - **fastapi** (MIT) - https://github.com/tiangolo/fastapi
 - **pgvector** (PostgreSQL License) - https://github.com/ankane/pgvector
 
-[Add other runtime dependencies from your requirements.txt/pyproject.toml]
-
 ---
 
 All third-party software is used in compliance with their respective licenses.
