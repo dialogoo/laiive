@@ -4,8 +4,8 @@
 
 #### what is 🫦Laiive
 Laiive is what will save you from being at home scrolling for the rest of your life.
-Laiive is where you find the perfect life event for you, and is the way to make people know you are doing something.
-If you want to do something now, friday evening, saturday morning... Just ask, Laiive will help you to find what you are looking for outside of the screen[^*]
+Laiive is where you find the perfect life event for you, and if you are an artist or a promoter is the way to make people know you are doing something.
+If you want to do something now, friday evening, saturday morning... Just ask, Laiive will help you to find what you are looking for outside of the screen.
 
 ![mockup](https://github.com/user-attachments/assets/4f94c5df-6b66-42b8-9925-1314b9987c48)
 
@@ -15,9 +15,6 @@ laiive links the broken connection between events and public[^*]
 ![mission](https://github.com/user-attachments/assets/569506fc-6adb-4762-8b60-2f2e0bb69866)
 
 #### why 🫦Laiive makes sense?
-1st Assumption: Music or event organizers will upload their events KEYPOINT (value is the event promoters getting used to this) problem: upload without seeing the result.
-2nd Assumption: People will check in the chat what to do, and system will answer friendly.
-3rd Assumption; with all the events there people will recommend it to friends and make it viral (growth model)
 
 #### why is 🫦Laiive good?
 
@@ -29,9 +26,7 @@ laiive links the broken connection between events and public[^*]
 <img width="90" height="90" alt="laiive1" src="https://github.com/user-attachments/assets/f8dc0267-f630-4a87-b3f8-fe0277137ba5"  />
 
 ### UI
-a ZERO CLIC UI is the public view of laiive
-1st phase:  MVP minimal viable product, streamlit easy app or similar (python base)
-2nd phase: jump into React frontend
+a ZERO CLIC UI is the public view of laiive, easy to publish an event, easy to find an event.
 
 ### retriever
 With a simple UI this is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
@@ -44,21 +39,17 @@ The transition will be based on geographic penetration.
 
 ### Pusher-Extractor
 Easy is the keyword, the most easy way to push and confirm your event data.
-Optimized for reliability. A reliable database serves reliable answers.
+The system takes care of reliability.
 
-### Data
-laiive deals with ephimeral data, data that still doesn't exist, laiive is a dynamic process, that grows in inertia when users use it and promoters push events.
-A Postgres db is the heart of this dynamics and stores all the system knowledge.
+### Data Strategy
+laiive deals with ephimeral data, data that still doesn't exist, laiive is a systemic platform that generates dynamic process, it grows in inertia when users use it and promoters push events.
+A db is the heart of this dynamics and stores all the system knowledge.
 
 ---
-
-[^*]: © 2025 Oscar Arroyo Vega. This project is licensed under the Apache License 2.0. You are free to use, modify, and distribute this software for any purpose, including commercial use, under the terms of the Apache 2.0 License. See the LICENSE file for details.
 
 ## License
 
 This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSES/LICENSE) file for details.
-
-Copyright 2025 Oscar Arroyo Vega
 
 ---
 
