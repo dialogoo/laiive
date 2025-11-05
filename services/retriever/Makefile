@@ -5,11 +5,15 @@ deps:
 
 # runs the server
 run:
-	uv run uvicorn retriever.api:app --host 0.0.0.0 --port 8000
+	uv run uvicorn src.api:app --host 0.0.0.0 --port 8000
 
 # adds reload so that the server restarts when the code changes
 run-dev:
-	uv run uvicorn retriever.api:app --host 0.0.0.0 --port 8000 --reload
+	uv run uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+
+# runs tests
+test:
+	uv run --extra test pytest tests/ -v
 
 # opens a shell in the container to work from inside the container
 shell:
