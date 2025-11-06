@@ -85,6 +85,7 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 
 #### Production Setup (it build and runs all the services at once)
 
-1. Go to the root directory and run:   ```bash
+1. Go to the root directory and run:
+   ```bash
    make up-prod
    ```
