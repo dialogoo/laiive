@@ -58,7 +58,8 @@ services:
           target: /app
           ignore:
             - .venv/
-  pgadmin: # TODO migrate to DBeaver
+  pgadmin:
+    # TODO migrate to DBeaver
     image: dpage/pgadmin4
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com # pragma: allowlist secret

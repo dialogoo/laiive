@@ -1,15 +1,16 @@
 from loguru import logger
 from fastapi import FastAPI, status
+from datetime import date
 from pydantic import BaseModel
 from typing import Optional
-from retriever.config import settings
-from retriever.main import get_response
+from src.config import settings
+from src.main import get_response
 
 
 # Schemas defined inline TODO if API endpoints > 15 move Schemas to schemas file.
 class DataRange(BaseModel):
-    start: str
-    end: str
+    start: date
+    end: date
 
 
 class SQLFilter(BaseModel):
@@ -29,7 +30,7 @@ class ChatResponse(BaseModel):
 # Create the app
 app = FastAPI(
     title="retriever",
-    description="retriever is a Chatbot that uses RAG to answer questions about musical life events",
+    description="retriever service is the chat backend that queries laiive database to inform about musical life events",
     version="0.1.0",
 )
 
@@ -38,13 +39,12 @@ app = FastAPI(
 def health():
     return {
         "msg": "retriever is running, healthy and ready to answer questions",
-        "status": "healthy"
+        "status": "healthy",
     }
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    """Simplified chat endpoint with proper Pydantic validation"""
     response = await get_response(request.message, request.filters)
     return ChatResponse(response=response)
 
