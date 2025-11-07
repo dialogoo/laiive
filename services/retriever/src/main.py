@@ -4,29 +4,17 @@ from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.ollama import Ollama
 from llama_index.llms.gemini import Gemini
 from llama_index.core.llms import LLM
-from pydantic import BaseModel, ValidationError
-from typing import Optional
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from datetime import date, datetime
 from loguru import logger
-import json
-
-
-class DataRange(BaseModel):
-    start: str
-    end: str
-
-
-class SQLFilter(BaseModel):
-    date_range: Optional[DataRange] = None
-    place: Optional[str] = None
+import time
+from contextlib import contextmanager
 
 
 today = date.today()
 
-# Create async engine
 engine = create_async_engine(settings.postgres_url)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -64,10 +52,14 @@ def llm_factory() -> LLM:
         )
 
     elif settings.llm_provider == "ollama":
+        logger.info(
+            f"Using Ollama with model: {settings.llm_model}, base_url: {settings.ollama_base_url}, temperature: {settings.llm_temperature}"
+        )
         return Ollama(
             model=settings.llm_model,  # e.g., "llama2", "mistral"
             base_url=settings.ollama_base_url,
             temperature=settings.llm_temperature,
+            timeout=120.0,
         )
 
     else:
@@ -77,151 +69,196 @@ def llm_factory() -> LLM:
 llm = llm_factory()
 
 
-async def get_response(message: str, filters_info: Optional[SQLFilter] = None) -> str:
-    """Simple version: just pass the user message to the LLM"""
-    logger.info(f"Processing message: {message}")
-
-    # Build a simple prompt
-    prompt = f"""You are a helpful assistant for musical life events.
-        Today is {today}.
-        User question: {message}
-        Please provide a helpful response."""
-
+@contextmanager
+def log_timing(description: str):
+    start = time.perf_counter()
+    logger.info(f"⏱️  Starting: {description}")
     try:
-        # Call the LLM
-        response = llm.complete(prompt)
-        logger.info("Successfully got LLM response")
-        return response.text
-    except Exception as e:
-        logger.error(f"Error calling LLM: {e}", exc_info=True)
-        return f"Sorry, I encountered an error: {str(e)}"
+        yield
+    finally:
+        elapsed = time.perf_counter() - start
+        logger.info(
+            f"✓ Completed: {description} in {elapsed:.3f}s ({elapsed*1000:.1f}ms)"
+        )
 
-    def format_date_range(date_range: DataRange) -> str:
-        return "event_date >= :start_date AND event_date <= :end_date"
 
-    def format_place_filter(place: str) -> str:
-        return "place_city ILIKE :place_pattern"  # TODO
+async def get_response(message, filters_info) -> str:
+    request_start = time.perf_counter()
 
-    def build_query(filters_info: SQLFilter) -> tuple[str, dict]:
-        base_query = "SELECT * FROM events"
-        conditions = []
-        params = {}
+    logger.info("=" * 80)
+    logger.info("NEW REQUEST")
+    logger.info(f"User message: {message}")
+    logger.info(f"Filters received: {filters_info}")
 
-        if filters_info.date_range:
-            date_condition = format_date_range(filters_info.date_range)
-            conditions.append(date_condition)
-            params["start_date"] = filters_info.date_range.start
-            params["end_date"] = filters_info.date_range.end
+    def build_query(filters) -> tuple[str, dict]:
+        with log_timing("Query building"):
+            base_query = """
+            WITH event_artist_ids AS (
+            SELECT
+                e.id AS event_id,
+                UNNEST(ARRAY[
+                e.artist1_id, e.artist2_id, e.artist3_id, e.artist4_id, e.artist5_id,
+                e.artist6_id, e.artist7_id, e.artist8_id, e.artist9_id, e.artist10_id
+                ]) AS artist_id
+            FROM events e
+            )
+            SELECT
+            -- all event fields
+            e.*,
+            -- venue fields (prefixed to avoid name collisions)
+            v.id          AS venue_id,
+            v.name        AS venue_name,
+            v.description AS venue_description,
+            v.address     AS venue_address,
+            v.city        AS venue_city,
+            v.country     AS venue_country,
+            v.capacity    AS venue_capacity,
+            v.latitude    AS venue_latitude,
+            v.longitude   AS venue_longitude,
+            v.link        AS venue_link,
+            v.image       AS venue_image,
+            -- artists:
+            -- 1) human-friendly list of names
+            STRING_AGG(DISTINCT a.name, ', ' ORDER BY a.name) AS artist_names,
+            -- 2) full JSON objects
+            JSONB_AGG(
+                DISTINCT JSONB_BUILD_OBJECT(
+                'id', a.id,
+                'name', a.name,
+                'description', a.description,
+                'genres', a.genres,
+                'link', a.link,
+                'image', a.image,
+                'country', a.country,
+                'city', a.city
+                )
+            ) FILTER (WHERE a.id IS NOT NULL) AS artists_json
+            FROM events e
+            JOIN venues v ON v.id = e.venue_id
+            LEFT JOIN event_artist_ids ea ON ea.event_id = e.id
+            LEFT JOIN artists a ON a.id = ea.artist_id
+            """
 
-        if filters_info.place:
-            place_condition = format_place_filter(filters_info.place)
-            conditions.append(place_condition)
-            params["place_pattern"] = f"%{filters_info.place}%"
+            conditions = []
+            params = {}
 
-        if conditions:
-            query = f"{base_query} WHERE {' AND '.join(conditions)}"
-        else:
-            query = base_query
+            if filters.place:
+                conditions.append("v.city = :city")
+                params["city"] = filters.place
+                logger.info(f"Filter: City = {filters.place}")
 
-        logger.info(f"Generated SQL query: {query}")
-        return query, params
+            if filters.dates:
+                logger.info(f"Filter: Processing {len(filters.dates)} dates")
+                logger.info(f"Date range: {filters.dates[0]} to {filters.dates[-1]}")
 
-    async def query_db(filters_info: SQLFilter) -> str:
+                date_conditions = []
+                for idx, date_str in enumerate(filters.dates):
+                    date_param = f"date_{idx}"
+                    date_conditions.append(
+                        f"(e.start_date <= :{date_param} AND COALESCE(e.end_date, e.start_date) >= :{date_param})"
+                    )
+                    params[date_param] = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                if date_conditions:
+                    conditions.append(f"({' OR '.join(date_conditions)})")
+                    logger.info(f"Generated {len(date_conditions)} date conditions")
+
+            if conditions:
+                query = f"{base_query}\nWHERE {' AND '.join(conditions)}"
+            else:
+                query = base_query
+
+            query += (
+                "\nGROUP BY e.id, v.id\nORDER BY e.start_date, e.start_time NULLS LAST"
+            )
+
+            logger.debug(f"Full SQL query:\n{query}")
+            logger.info(f"Query params count: {len(params)}")
+            return query, params
+
+    async def execute_query(query: str, params: dict) -> str:
         try:
-            query = build_query(filters_info)
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(sqlalchemy.text(query))
-                rows = result.fetchall()
-                return str([dict(row._mapping) for row in rows])
+            logger.info("-" * 80)
+            logger.info("EXECUTING DATABASE QUERY")
+
+            with log_timing("Database query execution"):
+                async with AsyncSessionLocal() as session:
+                    db_start = time.perf_counter()
+                    result = await session.execute(sqlalchemy.text(query), params)
+                    db_elapsed = time.perf_counter() - db_start
+                    logger.info(f"  → SQL execution: {db_elapsed:.3f}s")
+
+                    fetch_start = time.perf_counter()
+                    rows = result.fetchall()
+                    fetch_elapsed = time.perf_counter() - fetch_start
+                    logger.info(f"  → Fetch rows: {fetch_elapsed:.3f}s")
+
+                    logger.info(f"✓ Query returned {len(rows)} events")
+
+                    if rows:
+                        sample_event = dict(rows[0]._mapping)
+                        logger.debug(f"Sample event keys: {list(sample_event.keys())}")
+                        logger.debug(f"Sample event: {sample_event}")
+
+                    process_start = time.perf_counter()
+                    events_list = [dict(row._mapping) for row in rows]
+                    events_str = str(events_list)
+                    process_elapsed = time.perf_counter() - process_start
+                    logger.info(f"  → Process results: {process_elapsed:.3f}s")
+                    logger.info(f"Events data size: {len(events_str)} characters")
+
+                    return events_str
         except Exception as e:
-            logger.error(f"Error querying database: {e}")
+            logger.error(f"✗ Database error: {e}", exc_info=True)
             return f"Error querying database: {str(e)}"
 
-    filtered_events = await query_db(filters_info)
+    query, params = build_query(filters_info)
+    filtered_events = await execute_query(query, params)
 
-    prompt = f"""
-    You are a helpful assistant that can answer questions about musical life events.
-    You will be given the location and date range of dates that the user is interested in.
-    You will be given a list of filtered events from the events database.
-    You need to answer to the user given information in the message.
+    with log_timing("Prompt construction"):
+        prompt = f"""
+        You are a helpful assistant that can answer questions about musical life events.
+        You will be given the location and date range of dates that the user is interested in.
+        You will be given a list of filtered events from the events database.
+        You need to answer to the user given information in the message.
 
-    Today is {today}
-    The user message is: {message}
-    The filtered events are: {filtered_events}
-    The filters are: {filters_info}
+        Today is {today}
+        The user message is: {message}
+        The filters are: {filters_info}
+        The filtered events are: {filtered_events}
 
-    IMPORTANT: If the user asks for a "list" or "all" events, show ALL available events from the filtered results.
-    Do not limit yourself to just 2-3 events unless specifically asked.
-    Format the response as a clear list with all relevant details for each event.
+        IMPORTANT: return a list of maximum 5 events selected from the filtered events, that have better fit with the user message.
+        The answer should be short and include: date, artists, price, link, venue name, link and a very short description of the event.
 
-    Answer the user message based on the filtered events.
-    The answer should be in the same language as the user message.
-    """
+        The answer should be in the same language as the user message.
+        """
 
+    logger.info("-" * 80)
+    logger.info("CALLING LLM")
+    logger.info(f"Prompt length: {len(prompt)} characters")
+    logger.info(f"Prompt preview (first 500 chars):\n{prompt[:500]}...")
 
-def get_sql_filters(message: str) -> SQLFilter:
-    prompt = f"""
-    Analyze the following user message and extract specific information for database filtering.
-
-    User message: "{message}"
-
-    Please extract and format the following information:
-
-    1. DATE_RANGE: If a date range is mentioned, format as ["YYYY-MM-DD", "YYYY-MM-DD"]
-    2. PLACE: If a location, city, or address is mentioned
-
-    Examples:
-    - "Show me events in New York from 2024-01-15 to 2024-01-20" → date_range: ["2024-01-15", "2024-01-20"], place: "New York"
-    - "What's happening in London this week?" → place: "London"
-    - "What can I do in Paris?" → place: "Paris"
-
-    Return your response as a JSON object with only the fields that are present in the message.
-    If a field is not mentioned, omit it from the JSON response.
-    """
+    logger.debug(f"Full prompt:\n{prompt}")
 
     try:
-        response = llm.complete(prompt)
-        logger.debug(f"Raw LLM response: {response.text}")
+        with log_timing(f"LLM call ({settings.llm_provider})"):
+            response = llm.complete(prompt)
 
-        filter_data = json.loads(response.text.strip())
+        logger.info(f"✓ LLM response received, length: {len(response.text)} characters")
+        logger.debug(f"Full LLM response:\n{response.text}")
 
-        # Validate expected structure
-        if not isinstance(filter_data, dict):
-            raise ValueError(f"Expected dict, got {type(filter_data)}")
-
-        # Convert date strings to date objects
-        date_range = None
-        if filter_data.get("date_range"):
-            if (
-                not isinstance(filter_data["date_range"], list)
-                or len(filter_data["date_range"]) != 2
-            ):
-                raise ValueError(
-                    f"Invalid date_range format: {filter_data['date_range']}"
-                )
-            start_date = datetime.strptime(
-                filter_data["date_range"][0], "%Y-%m-%d"
-            ).date()
-            end_date = datetime.strptime(
-                filter_data["date_range"][1], "%Y-%m-%d"
-            ).date()
-            date_range = (start_date, end_date)
-
-        sql_filter = SQLFilter(
-            date_range=date_range,
-            place=filter_data.get("place"),
+        # Total request time
+        total_elapsed = time.perf_counter() - request_start
+        logger.info("=" * 80)
+        logger.info(
+            f"🏁 TOTAL REQUEST TIME: {total_elapsed:.3f}s ({total_elapsed*1000:.1f}ms)"
         )
-        logger.info(f"SQL filters: {sql_filter}")
-        return sql_filter
+        logger.info("=" * 80)
 
-    except json.JSONDecodeError as e:
-        logger.error(
-            f"Failed to parse LLM response as JSON: {e}. Response: {response.text[:200]}"
-        )
-        return SQLFilter()
-    except (ValueError, KeyError, ValidationError) as e:
-        logger.error(f"Invalid filter data structure: {e}. Data: {filter_data}")
-        return SQLFilter()
+        return response.text
     except Exception as e:
-        logger.error(f"Unexpected error extracting SQL filters: {e}", exc_info=True)
-    return SQLFilter()
+        logger.error(f"✗ LLM error: {e}", exc_info=True)
+        total_elapsed = time.perf_counter() - request_start
+        logger.info(f"🏁 REQUEST FAILED after {total_elapsed:.3f}s")
+        logger.info("=" * 80)
+        return f"Sorry, I encountered an error: {str(e)}"

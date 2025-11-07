@@ -2,19 +2,14 @@ from loguru import logger
 from fastapi import FastAPI, status
 from datetime import date
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from src.config import settings
 from src.main import get_response
 
 
 # Schemas defined inline TODO if API endpoints > 15 move Schemas to schemas file.
-class DataRange(BaseModel):
-    start: date
-    end: date
-
-
 class SQLFilter(BaseModel):
-    date_range: Optional[DataRange] = None
+    dates: Optional[List[str]] = None
     place: Optional[str] = None
 
 
