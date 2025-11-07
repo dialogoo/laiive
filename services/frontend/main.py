@@ -9,12 +9,12 @@ st.markdown(
 <style>
     /* Root background - black */
     .stApp {
-        background-color: #000000;
+        background-color: #2b2b2b;
     }
 
     /* Main container background */
     .main .block-container {
-        background-color: #000000;
+        background-color: #2b2b2b;
         padding-top: 2rem;
     }
 
@@ -34,12 +34,12 @@ st.markdown(
 
     /* Sidebar - mid grey with border */
     [data-testid="stSidebar"] {
-        background-color: #333333  !important;
-        border-right: 2px solid #404040 !important;
+        background-color: #2b2b2b  !important;
+        border-right: 2px solid #FF2AA0 !important;
     }
 
     [data-testid="stSidebar"] > div:first-child {
-        background-color: #333333;
+        background-color: #2b2b2b;
     }
 
     /* Sidebar labels and text - Fuchsia Pink */
@@ -59,7 +59,7 @@ st.markdown(
     .stTextInput input {
         background-color: #1e1e1e !important;
         color: #ffffff !important;
-        border: 1px solid #404040 !important;
+        border: 1px solid #FF2AA0 !important;
     }
 
     .stTextInput input:focus {
@@ -70,7 +70,7 @@ st.markdown(
     button[kind="primary"] {
         background-color: #404040 !important;
         color: #ffffff !important;
-        border: 1px solid #555555 !important;
+        border: 1px solid #FF2AA0 !important;
     }
 
     button[kind="primary"]:hover {
@@ -88,6 +88,24 @@ st.markdown(
     /* Chat message styling */
     .stMarkdown strong {
         color: #FF2AA0 !important;
+    }
+
+    /* User message bubble - right aligned with dark grey background */
+    .user-message {
+        background-color: #404040;
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+        margin-left: 40%;
+        text-align: right;
+        color: #ffffff;
+    }
+
+    /* Bot message styling */
+    .bot-message {
+        margin: 10px 0;
+        margin-left: 0%;
+        text-align: left;
     }
 
     /* Scrollbar styling */
@@ -149,20 +167,24 @@ def get_laiive_response(
     date_range=None,
 ):
     try:
-        # Prepare the request payload with filters
+        dates_list = None
+        if date_filter:
+            dates_list = [date_filter.isoformat()]
+        elif date_range:
+            from datetime import timedelta
+
+            current_date = date_range[0]
+            end_date = date_range[1]
+            dates_list = []
+            while current_date <= end_date:
+                dates_list.append(current_date.isoformat())
+                current_date += timedelta(days=1)
+
         payload = {
             "message": user_message,
             "filters": {
                 "place": place_filter if place_filter != "All" else None,
-                "date": date_filter.isoformat() if date_filter else None,
-                "date_range": (
-                    {
-                        "start": date_range[0].isoformat(),
-                        "end": date_range[1].isoformat(),
-                    }
-                    if date_range is not None
-                    else None
-                ),
+                "dates": dates_list,
             },
         }
 
@@ -178,18 +200,24 @@ def get_laiive_response(
 
 
 # Create a scrollable container for chat messages
-chat_container = st.container(height=500)  # Adjust height as needed
+chat_container = st.container(height=400)  # Adjust height as needed
 
 with chat_container:
     # Display chat history
     for sender, msg in st.session_state.messages:
         if sender == "user":
-            st.markdown(f"**You:** {msg}")
+            st.markdown(
+                f'<div class="user-message"><strong>You:</strong> {msg}</div>',
+                unsafe_allow_html=True,
+            )
         else:
-            st.markdown(f"**laiive:** {msg}")
+            st.markdown(
+                f'<div class="bot-message"><strong>laiive:</strong> {msg}</div>',
+                unsafe_allow_html=True,
+            )
 
 # Fixed input area at the bottom
-with st.container():
+with st.form(key="chat_form", clear_on_submit=True):
     col1, col2 = st.columns([5, 1])
     with col1:
         user_input = st.text_input(
@@ -199,7 +227,7 @@ with st.container():
             placeholder="Type your message...",
         )
     with col2:
-        send_button = st.button("Send", use_container_width=True)
+        send_button = st.form_submit_button("Send", use_container_width=True)
 
 if send_button and user_input:
     st.session_state.messages.append(("user", user_input))
@@ -211,6 +239,5 @@ if send_button and user_input:
         date_filter=selected_date,
         date_range=date_range,
     )
-
     st.session_state.messages.append(("laiive", bot_reply))
     st.rerun()  # Refresh to show new messages
