@@ -9,6 +9,8 @@ import json
 from datetime import datetime
 import os
 
+# TODO PARSER NEEDS API AND ISOLATED SYSTEM CONFIG AND ENV
+# In the long therm THINK PARSER microservice AS A GENERAL PORPOUSE PARSER LIBRARY that gets json files and pushes them to a SQL database with diferent levels of checkings, and an LLM check layer and a final human in the loop. observability tool could be a cool feature.
 
 class DatabaseParser:
     def __init__(self, database_url: str = None):
@@ -156,7 +158,7 @@ class DatabaseParser:
         self,
     ) -> Dict[
         str, Any
-    ]:  # TODO add all the data for review and check reviews for artists and venues
+    ]:  # TODO add all the data for review and check reviews for artists and venues // THIS FEATURE SHOULD BE BEFORE THE PARSE LIBRARY. IN THE SCRAPER Post transformations
         try:
             with open(self.review_file, "r", encoding="utf-8") as f:
                 lines = f.readlines()
@@ -196,7 +198,7 @@ class DatabaseParser:
     def _normalize_text(self, text: str) -> str:
         if not text:
             return ""
-        normalized = re.sub(r"[^\w\s]", "", text.lower().strip())
+        normalized = re.sub(r"[^\w\s]", "", text.lower().strip()) # FIXME no need and maybe some names include special characteres
         normalized = re.sub(r"\s+", " ", normalized)
         return normalized
 

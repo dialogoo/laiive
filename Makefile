@@ -58,7 +58,7 @@ all-services-up:
 	cd services/frontend && uv run streamlit run main.py --server.address 0.0.0.0 --server.port 3000 & \
 	cd services/retriever && uv run uvicorn retriever.api:app --host 0.0.0.0 --port 8000 --reload
 
-# --------------------SERVICE STARTERS --------------------------------------------------------------------------------------------------
+# --------------------SERVICE STARTERS INSIDE DEVCONTAINER --------------------------------------------------------------------------------------------------
 start-frontend:
 	cd services/frontend && uv sync && uv run streamlit run main.py --server.address 0.0.0.0 --server.port 3000
 
@@ -73,7 +73,3 @@ start-scraper:
 
 start-parser:
 	cd services/parser && uv sync && uv run python parser.py
-
-# --------------------TESTS --------------------------------------------------------------------------------------------------
-test-parser:
-	pytest tests/test_parser.py -v -s --log-cli-level=INFO --capture=no --tb=short
