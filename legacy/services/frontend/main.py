@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from datetime import date
+from datetime import date, timedelta
 from config import settings
 
 # Enhanced dark theme CSS
@@ -171,15 +171,17 @@ def get_laiive_response(
         if date_filter:
             dates_list = [date_filter.isoformat()]
         elif date_range:
-            from datetime import timedelta
 
             current_date = date_range[0]
             end_date = date_range[1]
+            days_diff = (end_date - current_date).days
+            MAX_DATE_RANGE_DAYS = 180  # TODO add as settings value.
+            if days_diff > MAX_DATE_RANGE_DAYS:
+                return f"Error: Date range too large. Maximum allowed is {MAX_DATE_RANGE_DAYS} days."
             dates_list = []
             while current_date <= end_date:
                 dates_list.append(current_date.isoformat())
                 current_date += timedelta(days=1)
-
         payload = {
             "message": user_message,
             "filters": {

@@ -212,8 +212,15 @@ async def get_response(message, filters_info) -> str:
             logger.error(f"✗ Database error: {e}", exc_info=True)
             return f"Error querying database: {str(e)}"
 
-    query, params = build_query(filters_info)
-    filtered_events = await execute_query(query, params)
+    try:
+        query, params = build_query(filters_info)
+    except Exception as e:
+        logger.error(f"✗ Query building error: {e}", exc_info=True)
+        return f"Sorry, I encountered an error processing your filters: {str(e)}"
+
+    filtered_events = await execute_query(
+        query, params
+    )  # TODO clean empty fields after query to polish context
 
     with log_timing("Prompt construction"):
         prompt = f"""

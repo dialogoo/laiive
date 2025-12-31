@@ -9,56 +9,56 @@ services:
       - .:/workspace:cached
     restart: unless-stopped
     depends_on:
-      - pusher
-      - retriever
+      - backend
+      - frontend
+      - db
     ports:
       - "3002:3000"
       - "8002:8000"
-      - "8003:8001"
     env_file:
       - .env
     tty: true
     stdin_open: true
-    command: ["sleep", "infinity"]
+    command: [ "sleep", "infinity" ]
 
-  pusher:
-    container_name: laiive-pusher
-    build: ./services/pusher
+  frontend:
+    container_name: laiive-frontend
+    build: ./services/frontend
     volumes:
-      - ./services/pusher:/app:cached
-      - pusher-venv:/app/.venv
+      - ./services/frontend:/app:cached
+      - frontend-venv:/app/.venv
     tty: true
     stdin_open: true
     environment:
       UV_LINK_MODE: copy
-    command: ["sleep", "infinity"]
+    command: [ "sleep", "infinity" ]
     develop:
       watch:
         - action: sync
-          path: ./services/pusher
+          path: .
           target: /app
           ignore:
             - .venv/
 
-  retriever:
+  backend:
     container_name: laiive-retriever
     build: ./services/retriever
     volumes:
       - ./services/retriever:/app:cached
-      - retriever-venv:/app/.venv
+      - backend-venv:/app/.venv
     tty: true
     stdin_open: true
     environment:
       UV_LINK_MODE: copy
-    command: ["sleep", "infinity"]
+    command: [ "sleep", "infinity" ]
     develop:
       watch:
         - action: sync
-          path: ./services/retriever
+          path: .
           target: /app
           ignore:
             - .venv/
 
 volumes:
-  pusher-venv:
-  retriever-venv:
+  frontend-venv:
+  backend-venv:
