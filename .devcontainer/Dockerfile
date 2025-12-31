@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     nano \
     vim \
+    procps \
+    lsof \
+    net-tools \
+    psmisc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pre-commit
