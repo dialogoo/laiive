@@ -34,22 +34,23 @@ laiive is a catalyzer of a world wide business that is actually unatended. laiiv
 ### UI
 a ZERO CLIC UI is the public view of laiive, easy to publish an event, easy to find an event.
 
-### retriever
-With a simple UI this is the backbone of laiive, high accuracy on retrievals from the knwoledge database is a must
-1st phase: with llama-index just session id, no user id. just serving info, not extracting info from conversations
-2nd phase. + user id
+### Retriever Agent
+The backbone of laiive, an agent-based retrieval system with high accuracy on retrievals from the Neo4j knowledge graph database. The retriever uses an orchestrator pattern with specialized agents:
+- **Orchestrator**: Routes queries and manages conversation flow
+- **DBQueryAgent**: Generates and executes Neo4j Cypher queries using LLM
+- **SafetyGuard**: Validates queries and enforces safety constraints
+- **Neo4jClient**: Handles graph database connections and query execution
 
-### Event Scraper
-First feed to the db, until the pusher will the main data source and the system is ready to switch
-The transition will be based on geographic penetration.
+Currently supports session-based queries. User ID support planned for future phases.
 
-### Pusher-Extractor
-Easy is the keyword, the most easy way to push and confirm your event data.
-The system takes care of reliability.
+### Pusher Agent
+Multimodal event ingestion service that receives submissions (text/image/audio), runs router + extraction + guardrails + HITL (Human-In-The-Loop) validation. The system takes care of reliability and data quality through automated validation and human review workflows.
+
+### Event Scraper (Legacy)
+Legacy service for initial data feed. Located in `legacy/services/scraper/`. The pusher agent will become the main data source as the system transitions based on geographic penetration.
 
 ### Data Strategy
-laiive deals with ephimeral data, data that still doesn't exist, laiive is a systemic platform that generates dynamic process, it grows in inertia when users use it and promoters push events.
-A db is the heart of this dynamics and stores all the system knowledge.
+laiive deals with ephemeral data, data that still doesn't exist. laiive is a systemic platform that generates dynamic processes, it grows in inertia when users use it and promoters push events. Neo4j graph database is the heart of this dynamics and stores all the system knowledge, enabling natural relationship queries between events, artists, venues, and users.
 
 ---
 
