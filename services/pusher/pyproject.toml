@@ -1,7 +1,12 @@
 [project]
-name = "pusher"
+name = "pusher-api"
 version = "0.1.0"
-description = "Add your description here"
+description = "Agent to upload events in a multimodal way with human validation to ensure Data quality"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.127.1",
+    "neo4j>=6.0.3",
+    "pydantic-settings>=2.12.0",
+    "uvicorn>=0.40.0",
+]
